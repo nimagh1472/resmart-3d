@@ -49,10 +49,11 @@ const DRIFT_SPEED_THRESHOLD = 0.35; // fraction of top speed
 const DRIFT_RESPONSE = 6;
 const DUST_PARTICLE_COUNT = 24;
 
-/** Exponential approach of `current` toward `target`, framerate-independent. */
-function damp(current: number, target: number, response: number, delta: number): number {
-  return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-response * delta));
-}
+// THREE.MathUtils.damp: the built-in framerate-independent exponential
+// approach of `current` toward `target` at rate `response`, over `delta`
+// seconds — used for every smoothed value below instead of a raw per-frame
+// lerp, so speed/turn/tilt easing stays consistent across framerates.
+const damp = THREE.MathUtils.damp;
 
 interface VehicleProps {
   isMobile: boolean;

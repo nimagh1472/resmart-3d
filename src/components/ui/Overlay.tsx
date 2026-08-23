@@ -72,7 +72,7 @@ export function Overlay() {
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-2 p-4">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-cyan-400/20 bg-neutral-950/75 px-4 py-2 text-sm font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-[rgba(0,240,255,0.25)] bg-[rgba(10,16,26,0.8)] backdrop-blur-[16px] px-4 py-2 text-sm font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10">
           <Sparkles size={14} className="text-purple-400" />
           <span className="font-semibold text-white">ReSmart AI</span>
           <span className="text-white/10">|</span>
@@ -98,7 +98,7 @@ export function Overlay() {
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-cyan-400/20 bg-neutral-950/75 p-1 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-[rgba(0,240,255,0.25)] bg-[rgba(10,16,26,0.8)] backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
           <button
             onClick={() => setPresentationMode('INTERACTIVE')}
             className={clsx(

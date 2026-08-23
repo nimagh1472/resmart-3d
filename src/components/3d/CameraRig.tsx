@@ -14,7 +14,7 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 25, 40);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 30, 45);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
 const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
 const MIN_HEIGHT_ABOVE_VEHICLE = 8;
@@ -33,7 +33,7 @@ function dampFactor(response: number, delta: number): number {
 // Overview shown before a vehicle exists or a role has been picked, so the
 // camera never defaults to an unframed/undefined view (e.g. pointing at the
 // sky) while the player is still on the role-select screen.
-const OVERVIEW_POSITION = new THREE.Vector3(0, 15, 30);
+const OVERVIEW_POSITION = new THREE.Vector3(0, 30, 45);
 const OVERVIEW_LOOK_TARGET = new THREE.Vector3(0, 0, 0);
 
 const TOUR_ORBIT_RADIUS = 18;
@@ -87,7 +87,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
   const dwellElapsed = useRef(0);
   const orbitAngle = useRef(0);
 
-  const desiredPosition = useRef(new THREE.Vector3(0, 15, 30));
+  const desiredPosition = useRef(new THREE.Vector3(0, 30, 45));
   const lookTarget = useRef(new THREE.Vector3());
   const lookMatrix = useRef(new THREE.Matrix4());
   const desiredQuaternion = useRef(new THREE.Quaternion());

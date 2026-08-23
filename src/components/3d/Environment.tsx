@@ -1,20 +1,43 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
 import { Color, type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
 
+/** Low-core-count devices (old phones, budget laptops) get the same "skip SSAO" treatment as mobile, even on desktop Chrome. */
+function detectLowEndGpu(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+}
+
 const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
 
-const SKY_COLOR = '#D8E5ED';
-const FOG_COLOR = '#D8E5ED';
-const FOG_DENSITY = 0.002;
+const SKY_COLOR = '#BFE0F2';
+const FOG_COLOR = '#CBDCE6';
+const FOG_DENSITY = 0.0016;
 
 const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
 const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
 const WATER_DEPTH = 160;
+
+/**
+ * Shared glass-tower material spec (Burj-style icy curtain-wall glass) —
+ * consumed by World.tsx's Building/CentralTower meshes so every skyscraper
+ * in the scene reads as the same photoreal glass, not just the landmark.
+ */
+export const GLASS_TOWER_MATERIAL_PROPS = {
+  color: '#D4F1F9',
+  roughness: 0.1,
+  metalness: 0.2,
+  transmission: 0.85,
+  thickness: 2,
+  ior: 1.5,
+  clearcoat: 1,
+  clearcoatRoughness: 0.08,
+  envMapIntensity: 1.5,
+} as const;
 
 interface EnvironmentProps {
   isMobile: boolean;
@@ -29,6 +52,8 @@ interface EnvironmentProps {
  * desktop — both are relatively expensive per-pixel passes.
  */
 export function Environment({ isMobile }: EnvironmentProps) {
+  const isLowEnd = useMemo(() => isMobile || detectLowEndGpu(), [isMobile]);
+
   return (
     <>
       <color attach="background" args={[SKY_COLOR]} />
@@ -38,10 +63,10 @@ export function Environment({ isMobile }: EnvironmentProps) {
 
       <directionalLight
         castShadow={!isMobile}
-        position={[50, 80, 50]}
-        intensity={1.5}
+        position={[60, 100, 60]}
+        intensity={1.8}
         color="#FFFBEF"
-        shadow-mapSize={isMobile ? [1024, 1024] : [4096, 4096]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-120}
         shadow-camera-right={120}
         shadow-camera-top={120}
@@ -56,21 +81,27 @@ export function Environment({ isMobile }: EnvironmentProps) {
 
       <CoastalWater isMobile={isMobile} />
 
-      {!isMobile && (
-        <EffectComposer multisampling={0}>
-          <SSAO
-            radius={0.3}
-            intensity={20}
-            luminanceInfluence={0.4}
-            color={SSAO_SHADOW_COLOR}
-            worldDistanceThreshold={20}
-            worldDistanceFalloff={5}
-            worldProximityThreshold={1.5}
-            worldProximityFalloff={0.5}
-          />
-          <Bloom luminanceThreshold={0.75} luminanceSmoothing={0.3} intensity={0.65} mipmapBlur />
-        </EffectComposer>
-      )}
+      {!isMobile &&
+        (() => {
+          const effects = [
+            !isLowEnd && (
+              <SSAO
+                key="ssao"
+                radius={0.3}
+                intensity={20}
+                luminanceInfluence={0.4}
+                color={SSAO_SHADOW_COLOR}
+                worldDistanceThreshold={20}
+                worldDistanceFalloff={5}
+                worldProximityThreshold={1.5}
+                worldProximityFalloff={0.5}
+              />
+            ),
+            <Bloom key="bloom" luminanceThreshold={0.85} luminanceSmoothing={0.3} intensity={0.5} mipmapBlur />,
+          ].filter((effect): effect is JSX.Element => Boolean(effect));
+
+          return <EffectComposer multisampling={0}>{effects}</EffectComposer>;
+        })()}
     </>
   );
 }
@@ -116,13 +147,15 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
   return (
     <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <planeGeometry ref={geometryRef} args={[WATER_WIDTH, WATER_DEPTH, segments, segments]} />
-      <meshStandardMaterial
-        color="#1c6fa6"
-        roughness={0.12}
-        metalness={0.6}
+      <meshPhysicalMaterial
+        color="#00A896"
+        roughness={0.05}
+        metalness={0.4}
+        clearcoat={1}
+        clearcoatRoughness={0.05}
         transparent
-        opacity={0.88}
-        envMapIntensity={1.3}
+        opacity={0.85}
+        envMapIntensity={1.4}
       />
     </mesh>
   );
