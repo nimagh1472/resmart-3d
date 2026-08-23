@@ -190,7 +190,7 @@ const BARRIERS: RoadArrowConfig[] = [0, 1, 2, 3].flatMap((cardinal) => {
 function Building({ position, width, depth, height, color, neonColor, tier = 'background' }: BuildingConfig) {
   return (
     <group position={position}>
-      <mesh position={[0, height / 2, 0]} castShadow>
+      <mesh position={[0, height / 2, 0]} castShadow={false}>
         <boxGeometry args={[width, height, depth]} />
         {tier === 'hero' ? (
           <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} color={color} />
@@ -215,7 +215,7 @@ function Building({ position, width, depth, height, color, neonColor, tier = 'ba
 function Billboard({ position, rotationY, label, color }: BillboardConfig) {
   return (
     <group position={position} rotation={[0, rotationY, 0]}>
-      <mesh position={[0, 8, 0]} castShadow>
+      <mesh position={[0, 8, 0]} castShadow={false}>
         <boxGeometry args={[9, 4.5, 0.3]} />
         <meshStandardMaterial color="#7C5C42" />
       </mesh>
@@ -267,7 +267,7 @@ function CentralTower() {
     <group position={CENTRAL_TOWER_POSITION}>
       {segments.map((segment, index) => (
         <group key={index} position={[0, segment.y, 0]}>
-          <mesh position={[0, segment.height / 2, 0]} castShadow>
+          <mesh position={[0, segment.height / 2, 0]} castShadow={false}>
             <boxGeometry args={[segment.width, segment.height, segment.depth]} />
             <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} envMapIntensity={1.8} />
           </mesh>
@@ -296,7 +296,7 @@ function CentralTower() {
         </group>
       ))}
 
-      <mesh position={[0, cumulativeHeight + TOWER_SPIRE_HEIGHT / 2, 0]} castShadow>
+      <mesh position={[0, cumulativeHeight + TOWER_SPIRE_HEIGHT / 2, 0]} castShadow={false}>
         <coneGeometry args={[1.4, TOWER_SPIRE_HEIGHT, 8]} />
         <meshStandardMaterial ref={spireGlowRef} color="#F5EFE0" emissive="#FFD166" emissiveIntensity={3.5} toneMapped={false} />
       </mesh>
@@ -408,7 +408,7 @@ function PalmTrees() {
 
   return (
     <>
-      <instancedMesh ref={trunkRef} args={[undefined, undefined, PALM_TREE_RING_COUNT]} castShadow>
+      <instancedMesh ref={trunkRef} args={[undefined, undefined, PALM_TREE_RING_COUNT]} castShadow={false}>
         <cylinderGeometry args={[0.18, 0.28, 4, 8]} />
         <meshStandardMaterial color="#5c4326" />
       </instancedMesh>
@@ -440,7 +440,7 @@ function StreetLamps() {
 
   return (
     <>
-      <instancedMesh ref={poleRef} args={[undefined, undefined, STREET_LAMP_RING_COUNT]} castShadow>
+      <instancedMesh ref={poleRef} args={[undefined, undefined, STREET_LAMP_RING_COUNT]} castShadow={false}>
         <cylinderGeometry args={[0.08, 0.1, 5, 8]} />
         <meshStandardMaterial color="#7C5C42" />
       </instancedMesh>
@@ -511,7 +511,7 @@ function Barriers() {
 
   return (
     <>
-      <instancedMesh ref={bodyRef} args={[undefined, undefined, BARRIERS.length]} castShadow>
+      <instancedMesh ref={bodyRef} args={[undefined, undefined, BARRIERS.length]} castShadow={false}>
         <boxGeometry args={[1.2, 1, 0.5]} />
         <meshStandardMaterial color="#f8fafc" />
       </instancedMesh>

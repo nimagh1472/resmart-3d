@@ -78,7 +78,9 @@ export function Experience() {
         toneMapping: ACESFilmicToneMapping,
         toneMappingExposure: 0.95,
         powerPreference: 'high-performance',
-        antialias: true,
+        antialias: false,
+        stencil: false,
+        depth: true,
       }}
       onCreated={handleCreated}
     >

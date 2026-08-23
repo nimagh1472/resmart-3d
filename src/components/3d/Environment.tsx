@@ -113,7 +113,7 @@ export function Environment({ isMobile }: EnvironmentProps) {
                 worldProximityFalloff={0.5}
               />
             ),
-            <Bloom key="bloom" luminanceThreshold={0.25} luminanceSmoothing={0.9} intensity={0.9} mipmapBlur />,
+            <Bloom key="bloom" luminanceThreshold={0.7} luminanceSmoothing={0.9} intensity={0.3} mipmapBlur />,
             <Vignette key="vignette" darkness={0.6} />,
           ].filter((effect): effect is JSX.Element => Boolean(effect));
 

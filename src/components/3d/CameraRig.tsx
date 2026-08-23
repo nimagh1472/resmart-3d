@@ -101,6 +101,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
   const vehiclePosition = useRef(new THREE.Vector3());
   const vehicleQuaternion = useRef(new THREE.Quaternion());
   const guidedZoneTarget = useRef(new THREE.Vector3());
+  const offsetScratch = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     const vehicle = vehicleRef.current;
@@ -145,7 +146,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       lookTarget.current.set(zoneX, zoneY + 2, zoneZ);
     } else {
       const offsetPreset = presentationMode === 'GUIDED' ? GUIDED_OFFSET : INTERACTIVE_OFFSET;
-      const offset = offsetPreset.clone().applyQuaternion(vehicleQuaternion.current);
+      const offset = offsetScratch.current.copy(offsetPreset).applyQuaternion(vehicleQuaternion.current);
       desiredPosition.current.copy(vehiclePosition.current).add(offset);
       lookTarget.current.copy(vehiclePosition.current).add(LOOK_AT_OFFSET);
 
