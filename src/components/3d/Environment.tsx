@@ -82,11 +82,11 @@ export function Environment({ isMobile }: EnvironmentProps) {
         position={[40, 70, 40]}
         intensity={1.8}
         color="#FFF5EA"
-        shadow-mapSize={isMobile ? [1024, 1024] : [2048, 2048]}
-        shadow-camera-left={-120}
-        shadow-camera-right={120}
-        shadow-camera-top={120}
-        shadow-camera-bottom={-120}
+        shadow-mapSize={[1024, 1024]}
+        shadow-camera-left={-40}
+        shadow-camera-right={40}
+        shadow-camera-top={40}
+        shadow-camera-bottom={-40}
         shadow-camera-near={1}
         shadow-camera-far={260}
         shadow-bias={-0.0003}

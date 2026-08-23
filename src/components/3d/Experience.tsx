@@ -73,8 +73,13 @@ export function Experience() {
       key={canvasKey}
       shadows={isMobile ? false : 'soft'}
       camera={{ position: [20, 18, 20], fov: 34, near: 1, far: 300 }}
-      dpr={isMobile ? [1, 1.25] : [1, 1.5]}
-      gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.95 }}
+      dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)}
+      gl={{
+        toneMapping: ACESFilmicToneMapping,
+        toneMappingExposure: 0.95,
+        powerPreference: 'high-performance',
+        antialias: true,
+      }}
       onCreated={handleCreated}
     >
       <Suspense fallback={null}>
