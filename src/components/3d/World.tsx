@@ -7,7 +7,7 @@ import type { Line2, LineMaterial } from 'three-stdlib';
 import * as THREE from 'three';
 import { DUBAI_LANDMARKS, STATIONS, WORLD_BOUNDS } from '@/lib/pitchData';
 import { FacingText } from '@/components/3d/FacingText';
-import { GLASS_TOWER_MATERIAL_PROPS } from '@/components/3d/Environment';
+import { GLASS_TOWER_MATERIAL_PROPS, BACKGROUND_BUILDING_MATERIAL_PROPS } from '@/components/3d/Environment';
 
 const ASPHALT_COLOR = '#1B2530';
 const LANE_GLOW_COLOR = '#00F0FF';
@@ -51,6 +51,8 @@ interface BuildingConfig {
   height: number;
   color: string;
   neonColor: string;
+  /** 'hero' = photoreal transmissive glass (landmarks); 'background' = cheaper opaque metallic glass (repeated filler). */
+  tier?: 'hero' | 'background';
 }
 
 interface BillboardConfig {
@@ -74,7 +76,7 @@ function buildEdge(axis: 'x' | 'z', sign: 1 | -1): BuildingConfig[] {
     const position: [number, number, number] =
       axis === 'z' ? [offset, 0, sign * EDGE_OFFSET] : [sign * EDGE_OFFSET, 0, offset];
 
-    return { position, width: 8, depth: 8, height, color, neonColor };
+    return { position, width: 8, depth: 8, height, color, neonColor, tier: 'background' as const };
   });
 }
 
@@ -101,6 +103,7 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 20,
     color: '#D4F1F9',
     neonColor: '#4ECDC4',
+    tier: 'hero',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 16, 0, MALL_DISTRICT_CENTER[2] - 14],
@@ -109,6 +112,7 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 16,
     color: '#C3E9F2',
     neonColor: '#FFD166',
+    tier: 'hero',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 4, 0, MALL_DISTRICT_CENTER[2] + 22],
@@ -117,6 +121,7 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 12,
     color: '#B8E3ED',
     neonColor: '#FF8FA3',
+    tier: 'hero',
   },
 ];
 
@@ -182,12 +187,16 @@ const BARRIERS: RoadArrowConfig[] = [0, 1, 2, 3].flatMap((cardinal) => {
   }));
 });
 
-function Building({ position, width, depth, height, color, neonColor }: BuildingConfig) {
+function Building({ position, width, depth, height, color, neonColor, tier = 'background' }: BuildingConfig) {
   return (
     <group position={position}>
       <mesh position={[0, height / 2, 0]} castShadow>
         <boxGeometry args={[width, height, depth]} />
-        <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} color={color} />
+        {tier === 'hero' ? (
+          <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} color={color} />
+        ) : (
+          <meshStandardMaterial {...BACKGROUND_BUILDING_MATERIAL_PROPS} color={color} />
+        )}
       </mesh>
       {[0.3, 0.55, 0.8].map((fraction, index) => (
         <mesh key={index} position={[0, height * fraction, depth / 2 + 0.02]}>

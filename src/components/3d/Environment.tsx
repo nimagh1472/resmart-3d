@@ -2,7 +2,8 @@
 
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
+import { EffectComposer, SSAO, Bloom, Vignette } from '@react-three/postprocessing';
+import { Environment as EnvironmentHDRI, MeshReflectorMaterial } from '@react-three/drei';
 import { Color, type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
 
@@ -14,29 +15,44 @@ function detectLowEndGpu(): boolean {
 
 const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
 
-const SKY_COLOR = '#BFE0F2';
-const FOG_COLOR = '#CBDCE6';
-const FOG_DENSITY = 0.0016;
+const SKY_COLOR = '#a8d5e8';
+const FOG_COLOR = '#a8d5e8';
+const FOG_NEAR = 40;
+const FOG_FAR = 220;
 
 const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
 const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
 const WATER_DEPTH = 160;
 
 /**
- * Shared glass-tower material spec (Burj-style icy curtain-wall glass) —
- * consumed by World.tsx's Building/CentralTower meshes so every skyscraper
- * in the scene reads as the same photoreal glass, not just the landmark.
+ * Hero-landmark glass material spec (Burj Khalifa + the 3-5 main towers) —
+ * real transmission/refraction so these read as photoreal glass. Reserved
+ * for the Central Tower and Mall District towers; background/filler
+ * buildings use BACKGROUND_BUILDING_MATERIAL_PROPS instead since transmission
+ * is expensive to render across dozens of repeated instances.
  */
 export const GLASS_TOWER_MATERIAL_PROPS = {
   color: '#D4F1F9',
-  roughness: 0.1,
-  metalness: 0.2,
-  transmission: 0.85,
-  thickness: 2,
+  roughness: 0.08,
+  transmission: 0.95,
+  thickness: 2.5,
   ior: 1.5,
   clearcoat: 1,
-  clearcoatRoughness: 0.08,
-  envMapIntensity: 1.5,
+  clearcoatRoughness: 0.05,
+  envMapIntensity: 1.8,
+  attenuationColor: '#4fc8ff',
+  attenuationDistance: 5,
+} as const;
+
+/**
+ * Background/filler building material spec — opaque metallic glass look
+ * (no transmission) for the repeated skyline buildings ringing WORLD_BOUNDS.
+ */
+export const BACKGROUND_BUILDING_MATERIAL_PROPS = {
+  color: '#D4F1F9',
+  metalness: 0.9,
+  roughness: 0.15,
+  envMapIntensity: 1.2,
 } as const;
 
 interface EnvironmentProps {
@@ -58,15 +74,15 @@ export function Environment({ isMobile }: EnvironmentProps) {
     <>
       <color attach="background" args={[SKY_COLOR]} />
 
-      <hemisphereLight args={['#EAF4FF', '#B7C7CE', 0.55]} />
-      <ambientLight intensity={0.55} color="#EAF4FF" />
+      <EnvironmentHDRI preset="city" background={false} />
+      <hemisphereLight args={['#bde3ff', '#3a2f28', 0.5]} />
 
       <directionalLight
         castShadow={!isMobile}
-        position={[60, 100, 60]}
-        intensity={1.8}
+        position={[50, 80, 30]}
+        intensity={2.2}
         color="#FFFBEF"
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={isMobile ? [1024, 1024] : [2048, 2048]}
         shadow-camera-left={-120}
         shadow-camera-right={120}
         shadow-camera-top={120}
@@ -77,7 +93,7 @@ export function Environment({ isMobile }: EnvironmentProps) {
         shadow-normalBias={0.02}
       />
 
-      <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
+      <fog attach="fog" args={[FOG_COLOR, FOG_NEAR, FOG_FAR]} />
 
       <CoastalWater isMobile={isMobile} />
 
@@ -97,7 +113,8 @@ export function Environment({ isMobile }: EnvironmentProps) {
                 worldProximityFalloff={0.5}
               />
             ),
-            <Bloom key="bloom" luminanceThreshold={0.85} luminanceSmoothing={0.3} intensity={0.5} mipmapBlur />,
+            <Bloom key="bloom" luminanceThreshold={0.25} luminanceSmoothing={0.9} intensity={0.9} mipmapBlur />,
+            <Vignette key="vignette" darkness={0.6} />,
           ].filter((effect): effect is JSX.Element => Boolean(effect));
 
           return <EffectComposer multisampling={0}>{effects}</EffectComposer>;
@@ -147,16 +164,20 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
   return (
     <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
       <planeGeometry ref={geometryRef} args={[WATER_WIDTH, WATER_DEPTH, segments, segments]} />
-      <meshPhysicalMaterial
-        color="#00A896"
-        roughness={0.05}
-        metalness={0.4}
-        clearcoat={1}
-        clearcoatRoughness={0.05}
-        transparent
-        opacity={0.85}
-        envMapIntensity={1.4}
-      />
+      {isMobile ? (
+        <meshStandardMaterial color="#0a3b42" roughness={0.15} metalness={0.4} transparent opacity={0.85} />
+      ) : (
+        <MeshReflectorMaterial
+          mirror={0.5}
+          blur={[300, 100]}
+          resolution={1024}
+          mixBlur={1}
+          mixStrength={40}
+          roughness={0.15}
+          color="#0a3b42"
+          metalness={0.4}
+        />
+      )}
     </mesh>
   );
 }
