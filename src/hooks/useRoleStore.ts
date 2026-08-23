@@ -43,6 +43,7 @@ let nextTransactionId = 1;
 interface RoleState {
   presentationMode: PresentationMode;
   activeRole: RoleType;
+  hasEnteredExperience: boolean;
   completedStations: string[];
   earnings: number;
   isAudioEnabled: boolean;
@@ -84,6 +85,8 @@ interface RoleState {
   completeStation: (id: string) => void;
   setPresentationMode: (mode: PresentationMode) => void;
   setRole: (role: RoleType) => void;
+  enterExperience: () => void;
+  backToHub: () => void;
   setWebGLError: (isError: boolean) => void;
   setAudioEnabled: (enabled: boolean) => void;
   setCinematicZoneIndex: (index: number) => void;
@@ -112,6 +115,7 @@ interface RoleState {
 export const useRoleStore = create<RoleState>((set, get) => ({
   presentationMode: 'INTERACTIVE',
   activeRole: null,
+  hasEnteredExperience: false,
   completedStations: [],
   earnings: 0,
   isAudioEnabled: false,
@@ -174,6 +178,11 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       cinematicZoneIndex: mode === 'CINEMATIC' ? 0 : state.cinematicZoneIndex,
     })),
   setRole: (role) => set({ activeRole: role }),
+  enterExperience: () => set({ hasEnteredExperience: true }),
+  // Returns to the Role Selection hub from mid-gameplay without touching
+  // useUserProfileStore's persisted score/rank — scores are never stored on
+  // this store, so leaving a run in progress simply abandons it.
+  backToHub: () => set({ activeRole: null, presentationMode: 'INTERACTIVE' }),
   setWebGLError: (isError) => set({ isWebGLError: isError }),
   setAudioEnabled: (enabled) => set({ isAudioEnabled: enabled }),
   setCinematicZoneIndex: (index) => set({ cinematicZoneIndex: index }),

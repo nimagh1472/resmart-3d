@@ -8,6 +8,7 @@ import { Award, ChevronLeft, ChevronRight, Flag, PackageCheck, PackageX, RotateC
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getQualificationStatus, ROLE_BADGES } from '@/lib/leaderboard';
+import { GameNavBar } from '@/components/ui/GameNavBar';
 import {
   ROAD_LENGTH,
   TARGET_PRODUCT_NAME,
@@ -119,6 +120,8 @@ export function CustomerGame() {
       <div className="pointer-events-auto absolute inset-0">
         <CustomerGameScene key={runKey} />
       </div>
+
+      <GameNavBar />
 
       {/* HUD */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-4">

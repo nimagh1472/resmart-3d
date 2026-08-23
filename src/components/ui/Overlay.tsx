@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
-import { Car, Clapperboard, FileText, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { Car, ChevronLeft, Clapperboard, FileText, IdCard, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
@@ -49,13 +49,17 @@ export function Overlay() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
+  const backToHub = useRoleStore((state) => state.backToHub);
   const chapterIndex = useRoleStore((state) => (activeRole ? state.chapterIndex[activeRole as StoryRoleKey] : null));
   const customerWallet = useRoleStore((state) => state.customerWallet);
   const driverEarnings = useRoleStore((state) => state.driverEarnings);
   const activeOrderCountdownSeconds = useRoleStore((state) => state.activeOrderCountdownSeconds);
   const tickOrderCountdown = useRoleStore((state) => state.tickOrderCountdown);
   const openLeaderboard = useUserProfileStore((state) => state.openLeaderboard);
+  const openAccountPanel = useUserProfileStore((state) => state.openAccountPanel);
   const { isAudioEnabled, unlock, mute } = useSound();
+
+  const isSessionActive = activeRole !== null || presentationMode === 'CINEMATIC';
 
   useEffect(() => {
     if (activeOrderCountdownSeconds === null) return;
@@ -101,6 +105,17 @@ export function Overlay() {
         </div>
 
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-[rgba(0,240,255,0.25)] bg-[rgba(10,16,26,0.8)] backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
+          {isSessionActive && (
+            <>
+              <button
+                onClick={backToHub}
+                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:bg-white/10"
+              >
+                <ChevronLeft size={14} /> Hub
+              </button>
+              <span className="text-white/10">|</span>
+            </>
+          )}
           <button
             onClick={() => setPresentationMode('INTERACTIVE')}
             className={clsx(
@@ -145,6 +160,13 @@ export function Overlay() {
             className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
           >
             <Trophy size={14} />
+          </button>
+          <button
+            onClick={openAccountPanel}
+            aria-label="Open my ReSmart profile"
+            className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
+          >
+            <IdCard size={14} />
           </button>
         </div>
       </div>

@@ -92,6 +92,25 @@ export function getQualificationStatus(role: ProfileRole, email: string): Qualif
   return { rank, isQualified: false, pointsToQualify: Math.max(1, thresholdScore - myScore + 1) };
 }
 
+export interface RoleSummary {
+  score: number;
+  rank: number | null;
+  isQualified: boolean;
+}
+
+const ALL_PROFILE_ROLES: ProfileRole[] = ['driver', 'customer', 'investor'];
+
+/** This email's score/rank/qualification across all 3 personas at once — powers the Account Panel's side-by-side view. */
+export function getAllRoleSummaries(email: string): Record<ProfileRole, RoleSummary> {
+  const entries = readAllEntries();
+  return ALL_PROFILE_ROLES.reduce((summary, role) => {
+    const entry = entries.find((candidate) => candidate.role === role && candidate.email === email);
+    const qualification = getQualificationStatus(role, email);
+    summary[role] = { score: entry?.score ?? 0, rank: qualification.rank, isQualified: qualification.isQualified };
+    return summary;
+  }, {} as Record<ProfileRole, RoleSummary>);
+}
+
 export interface LeaderboardSubmission {
   email: string;
   role: ProfileRole;

@@ -8,12 +8,21 @@ interface UserProfileState {
   role: ProfileRole | null;
   score: number;
   rank: number;
+  referralCode: string;
   isLeaderboardOpen: boolean;
+  isAccountPanelOpen: boolean;
 
   setProfile: (email: string, role: ProfileRole) => void;
   addScore: (points: number) => void;
   openLeaderboard: () => void;
   closeLeaderboard: () => void;
+  openAccountPanel: () => void;
+  closeAccountPanel: () => void;
+}
+
+/** Short, non-identifying code shared in referral links — derived once per profile rather than the raw email. */
+function generateReferralCode(): string {
+  return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 /** Recomputes rank + syncs the shared leaderboard (localStorage + best-effort API) for the current profile. */
@@ -40,10 +49,12 @@ export const useUserProfileStore = create<UserProfileState>()(
       role: null,
       score: 0,
       rank: 0,
+      referralCode: '',
       isLeaderboardOpen: false,
+      isAccountPanelOpen: false,
 
       setProfile: (email, role) => {
-        set({ email, role });
+        set((state) => ({ email, role, referralCode: state.referralCode || generateReferralCode() }));
         const rank = syncLeaderboard(email, role, get().score);
         set({ rank });
       },
@@ -59,10 +70,18 @@ export const useUserProfileStore = create<UserProfileState>()(
 
       openLeaderboard: () => set({ isLeaderboardOpen: true }),
       closeLeaderboard: () => set({ isLeaderboardOpen: false }),
+      openAccountPanel: () => set({ isAccountPanelOpen: true }),
+      closeAccountPanel: () => set({ isAccountPanelOpen: false }),
     }),
     {
       name: 'resmart_user_profile',
-      partialize: (state) => ({ email: state.email, role: state.role, score: state.score, rank: state.rank }),
+      partialize: (state) => ({
+        email: state.email,
+        role: state.role,
+        score: state.score,
+        rank: state.rank,
+        referralCode: state.referralCode,
+      }),
     },
   ),
 );

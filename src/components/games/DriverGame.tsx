@@ -8,6 +8,7 @@ import { Award, ChevronLeft, ChevronRight, Flag, RotateCcw, Trophy, Zap } from '
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getQualificationStatus, ROLE_BADGES } from '@/lib/leaderboard';
+import { GameNavBar } from '@/components/ui/GameNavBar';
 import {
   ROAD_LENGTH,
   TOTAL_NODE_COUNT,
@@ -121,6 +122,8 @@ export function DriverGame() {
       <div className="pointer-events-auto absolute inset-0">
         <DriverGameScene key={runKey} />
       </div>
+
+      <GameNavBar />
 
       {/* HUD */}
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-4">

@@ -58,6 +58,7 @@ const INVESTOR_OPTION: RoleOption = {
 export function RoleSelector() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const presentationMode = useRoleStore((state) => state.presentationMode);
+  const hasEnteredExperience = useRoleStore((state) => state.hasEnteredExperience);
   const setRole = useRoleStore((state) => state.setRole);
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const { unlock } = useSound();
@@ -92,7 +93,12 @@ export function RoleSelector() {
   // here as well would make this permanently hidden once any profile exists,
   // which would strand anyone who explicitly backs out of a role (e.g.
   // DriverGame's "Back to Menu") with no way back to role selection.
-  if (isSessionActive) return null;
+  // A brand-new visitor (no persisted profile yet) sees LandingOverlay first;
+  // this modal stays hidden until they've clicked its "Enter 3D Dubai
+  // Experience" CTA (enterExperience()). Returning visitors skip the landing
+  // page entirely — persistedEmail being set bypasses this check so the
+  // resume effect above can still fire.
+  if (isSessionActive || (!persistedEmail && !hasEnteredExperience)) return null;
 
   const validateEmail = (): boolean => {
     if (!EMAIL_PATTERN.test(email.trim())) {
