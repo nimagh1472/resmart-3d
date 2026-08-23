@@ -3,8 +3,8 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { EffectComposer, SSAO, Bloom, Vignette } from '@react-three/postprocessing';
-import { Environment as EnvironmentHDRI, MeshReflectorMaterial } from '@react-three/drei';
-import { Color, type PlaneGeometry } from 'three';
+import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Sky } from '@react-three/drei';
+import { Color, Vector3, type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
 
 /** Low-core-count devices (old phones, budget laptops) get the same "skip SSAO" treatment as mobile, even on desktop Chrome. */
@@ -13,12 +13,21 @@ function detectLowEndGpu(): boolean {
   return typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
 }
 
-const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
+const SSAO_SHADOW_COLOR = new Color('#2a1c14');
 
-const SKY_COLOR = '#D8EEF8';
-const FOG_COLOR = '#D5E5ED';
-const FOG_NEAR = 60;
-const FOG_FAR = 300;
+// Cinematic dusk/golden-hour rig: a single low-elevation sun direction drives
+// drei's <Sky> (physical scattering sky dome), the "sun" directional light,
+// and the fog tint below, so the sky, sunlight color, and haze all agree on
+// where "golden hour" is coming from. Kept as a plain tuple (not a shared
+// Vector3 instance) for the directionalLight's `position` prop — R3F assigns
+// array props via light.position.set(...), whereas reusing one Vector3
+// object across multiple JSX props would alias light.position itself.
+const SUN_DIRECTION: [number, number, number] = [70, 16, -55];
+const SUN_VECTOR = new Vector3(...SUN_DIRECTION);
+const SKY_COLOR = '#F3B27A';
+const FOG_COLOR = '#E8A46B';
+const FOG_NEAR = 50;
+const FOG_FAR = 260;
 
 const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
 const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
@@ -60,12 +69,13 @@ interface EnvironmentProps {
 }
 
 /**
- * Photorealistic Downtown Dubai lighting rig: a bright coastal-blue sky,
- * crisp high-resolution sunlight casting dynamic shadows, subtle atmospheric
- * fog matching the sky color, and a rippling coastal water plane standing in
- * for Dubai Creek/the waterfront beyond the drivable area. Postprocessing
- * (SSAO contact shadows + bloom on emissive/glass accents) only runs on
- * desktop — both are relatively expensive per-pixel passes.
+ * Cinematic dusk/golden-hour Downtown Dubai lighting rig: a physically
+ * scattered <Sky> dome standing in for volumetric haze along the horizon,
+ * warm low-angle "sun" directional light casting dynamic shadows, amber fog
+ * matching the sky's horizon tone, and a rippling coastal water plane
+ * standing in for Dubai Creek/the waterfront beyond the drivable area.
+ * Postprocessing (SSAO contact shadows + bloom on emissive/glass accents)
+ * only runs on desktop — both are relatively expensive per-pixel passes.
  */
 export function Environment({ isMobile }: EnvironmentProps) {
   const isLowEnd = useMemo(() => isMobile || detectLowEndGpu(), [isMobile]);
@@ -74,14 +84,22 @@ export function Environment({ isMobile }: EnvironmentProps) {
     <>
       <color attach="background" args={[SKY_COLOR]} />
 
-      <EnvironmentHDRI preset="city" background={false} environmentIntensity={0.4} />
-      <hemisphereLight args={['#D8EEF8', '#8D7B68', 0.6]} />
+      <Sky
+        sunPosition={SUN_VECTOR}
+        turbidity={9}
+        rayleigh={2.2}
+        mieCoefficient={0.012}
+        mieDirectionalG={0.9}
+      />
+
+      <EnvironmentHDRI preset="sunset" background={false} environmentIntensity={0.5} />
+      <hemisphereLight args={['#FFD8A8', '#8D7B68', 0.55]} />
 
       <directionalLight
         castShadow={!isMobile}
-        position={[40, 70, 40]}
-        intensity={1.8}
-        color="#FFF5EA"
+        position={SUN_DIRECTION}
+        intensity={2.1}
+        color="#FFB066"
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-40}
         shadow-camera-right={40}
@@ -92,6 +110,8 @@ export function Environment({ isMobile }: EnvironmentProps) {
         shadow-bias={-0.0003}
         shadow-normalBias={0.02}
       />
+      {/* Cool rim/fill from the opposite side so shadow faces don't go fully black under the low warm sun. */}
+      <directionalLight position={[-50, 30, 40]} intensity={0.35} color="#6FA8D8" />
 
       <fog attach="fog" args={[FOG_COLOR, FOG_NEAR, FOG_FAR]} />
 
@@ -113,8 +133,8 @@ export function Environment({ isMobile }: EnvironmentProps) {
                 worldProximityFalloff={0.5}
               />
             ),
-            <Bloom key="bloom" luminanceThreshold={0.65} luminanceSmoothing={0.9} intensity={0.4} mipmapBlur />,
-            <Vignette key="vignette" darkness={0.6} />,
+            <Bloom key="bloom" luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={0.55} mipmapBlur />,
+            <Vignette key="vignette" darkness={0.65} />,
           ].filter((effect): effect is JSX.Element => Boolean(effect));
 
           return <EffectComposer multisampling={0}>{effects}</EffectComposer>;

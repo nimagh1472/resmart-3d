@@ -29,6 +29,7 @@ export function AccountPanel() {
   const email = useUserProfileStore((state) => state.email);
   const currentRole = useUserProfileStore((state) => state.role);
   const referralCode = useUserProfileStore((state) => state.referralCode);
+  const openShareCard = useUserProfileStore((state) => state.openShareCard);
 
   const [copied, setCopied] = useState(false);
 
@@ -66,8 +67,8 @@ export function AccountPanel() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-asphalt/70 backdrop-blur-sm">
+      <div className="animate-modal-in relative w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
         <button
           onClick={closeAccountPanel}
           aria-label="Close account panel"
@@ -115,6 +116,12 @@ export function AccountPanel() {
                   <Award size={10} />
                   {summary?.isQualified ? 'Top 50 Qualified' : ROLE_BADGES[role]}
                 </div>
+                <button
+                  onClick={() => openShareCard(role)}
+                  className="mt-2 flex w-full items-center justify-center gap-1 rounded-full border border-cyan-400/30 bg-cyan-400/10 px-2 py-1 text-[10px] font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+                >
+                  <Share2 size={10} /> Share Rank
+                </button>
               </div>
             );
           })}

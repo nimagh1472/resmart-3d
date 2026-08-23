@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Line } from '@react-three/drei';
+import { Line, MeshReflectorMaterial, Sparkles } from '@react-three/drei';
 import type { Line2, LineMaterial } from 'three-stdlib';
 import * as THREE from 'three';
 import { DUBAI_LANDMARKS, STATIONS, WORLD_BOUNDS } from '@/lib/pitchData';
 import { FacingText } from '@/components/3d/FacingText';
 import { GLASS_TOWER_MATERIAL_PROPS, BACKGROUND_BUILDING_MATERIAL_PROPS } from '@/components/3d/Environment';
 
-const ASPHALT_COLOR = '#1B2530';
+const ASPHALT_COLOR = '#1E252B'; // Deep Slate Asphalt — matches the brand palette's asphalt token (tailwind.config.ts)
 const LANE_GLOW_COLOR = '#00F0FF';
 
 // Scratch objects reused to compose a "group position/rotationY + local
@@ -527,9 +527,12 @@ function Barriers() {
 
 /**
  * Dubai Fountain-inspired water feature: a circular basin with jets that bob
- * up and down via useFrame, near the Dubai Mall district.
+ * up and down via useFrame, near the Dubai Mall district. The basin surface
+ * uses a real-time MeshReflectorMaterial (matching Environment.tsx's
+ * CoastalWater) on desktop so it picks up the golden-hour sky and the Mall
+ * District towers as live reflections; mobile gets a cheaper flat material.
  */
-function Fountain() {
+function Fountain({ isMobile }: { isMobile: boolean }) {
   const jetRefs = useRef<THREE.Mesh[]>([]);
   const jetCount = 8;
 
@@ -544,7 +547,20 @@ function Fountain() {
     <group position={FOUNTAIN_POSITION}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
         <circleGeometry args={[5, 32]} />
-        <meshStandardMaterial color="#5DADE2" />
+        {isMobile ? (
+          <meshStandardMaterial color="#3f9fd6" roughness={0.2} metalness={0.3} transparent opacity={0.85} />
+        ) : (
+          <MeshReflectorMaterial
+            mirror={0.7}
+            blur={[200, 80]}
+            resolution={512}
+            mixBlur={0.8}
+            mixStrength={25}
+            roughness={0.1}
+            color="#3f9fd6"
+            metalness={0.3}
+          />
+        )}
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
         <ringGeometry args={[4.6, 5, 32]} />
@@ -581,13 +597,13 @@ function Fountain() {
 }
 
 /** Glassy mall cluster + fountain, off to one side of the CUSTOMER_STORE station. */
-function MallDistrict() {
+function MallDistrict({ isMobile }: { isMobile: boolean }) {
   return (
     <>
       {MALL_BUILDINGS.map((building, index) => (
         <Building key={index} {...building} />
       ))}
-      <Fountain />
+      <Fountain isMobile={isMobile} />
       <FacingText
         position={[MALL_DISTRICT_CENTER[0], 9, MALL_DISTRICT_CENTER[2] + 26]}
         fontSize={1.1}
@@ -744,6 +760,42 @@ function LocationPins() {
   );
 }
 
+const AI_NODE_LAYERS: Array<{ position: [number, number, number]; color: string; count: number; scale: number }> = [
+  { position: CENTRAL_TOWER_POSITION, color: '#22d3ee', count: 60, scale: 34 },
+  { position: MALL_DISTRICT_CENTER, color: '#facc15', count: 36, scale: 24 },
+];
+
+/**
+ * Ambient "AI logistics network" node particles — soft glowing motes drifting
+ * around the Central Tower and Mall District, standing in for ReSmart AI's
+ * autonomous routing network rather than any literal geometry. Built on
+ * drei's <Sparkles> (a single cheap point-cloud draw call per layer) instead
+ * of a bespoke instanced system, since there's no per-node logic needed
+ * beyond drift/twinkle, which Sparkles already provides.
+ */
+function AINodeParticles() {
+  return (
+    <>
+      {AI_NODE_LAYERS.map((layer, index) => (
+        <Sparkles
+          key={index}
+          position={[layer.position[0], 18, layer.position[2]]}
+          count={layer.count}
+          scale={layer.scale}
+          size={3}
+          speed={0.3}
+          opacity={0.7}
+          color={layer.color}
+        />
+      ))}
+    </>
+  );
+}
+
+interface WorldProps {
+  isMobile: boolean;
+}
+
 /**
  * Downtown Dubai-inspired dense city layout: a Burj Khalifa-style central
  * tower ringed by a curved boulevard, a Dubai Mall/Fountain district, and
@@ -752,14 +804,15 @@ function LocationPins() {
  * WORLD_BOUNDS. Every label goes through FacingText so it reads correctly
  * from either driving direction.
  */
-export function World() {
+export function World({ isMobile }: WorldProps) {
   return (
     <>
       <CentralTower />
       <Boulevard />
-      <MallDistrict />
+      <MallDistrict isMobile={isMobile} />
       <DeliveryRoutes />
       <LocationPins />
+      {!isMobile && <AINodeParticles />}
 
       <PalmTrees />
       <StreetLamps />

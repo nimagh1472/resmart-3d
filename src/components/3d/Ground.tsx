@@ -23,7 +23,7 @@ export function Ground() {
       <RigidBody type="fixed" colliders="cuboid" friction={1}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[WIDTH, DEPTH]} />
-          <meshStandardMaterial color="#E5DDCB" roughness={0.95} metalness={0} />
+          <meshStandardMaterial color="#E5DAC3" roughness={0.95} metalness={0} />
         </mesh>
       </RigidBody>
 

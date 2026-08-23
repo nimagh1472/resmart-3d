@@ -114,8 +114,8 @@ export function LeadCaptureModal() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-md rounded-2xl border border-purple-500/30 bg-gradient-to-b from-neutral-900 to-neutral-950 p-6 shadow-2xl shadow-purple-500/20">
+    <div className="pointer-events-auto absolute inset-0 z-[60] flex items-center justify-center bg-asphalt/70 backdrop-blur-sm">
+      <div className="animate-modal-in relative w-full max-w-md rounded-2xl border border-purple-500/30 bg-gradient-to-b from-neutral-900 to-asphalt p-6 shadow-2xl shadow-purple-500/20">
         <button
           onClick={closeLeadModal}
           aria-label="Close early access form"

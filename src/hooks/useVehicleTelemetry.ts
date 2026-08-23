@@ -1,6 +1,8 @@
 export interface VehicleTelemetry {
   x: number;
   z: number;
+  /** Current |speed| / top speed, in [0, 1] — drives Vehicle.tsx's WheelLightTrails glow/length. */
+  speedFraction: number;
 }
 
 /**
@@ -11,4 +13,4 @@ export interface VehicleTelemetry {
  * and writes SVG attributes directly, so a 60fps position feed never has to
  * go through React state/re-renders.
  */
-export const vehicleTelemetry: VehicleTelemetry = { x: 0, z: 0 };
+export const vehicleTelemetry: VehicleTelemetry = { x: 0, z: 0, speedFraction: 0 };

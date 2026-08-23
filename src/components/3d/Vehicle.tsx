@@ -3,12 +3,13 @@
 import { forwardRef, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, type RapierRigidBody, type CollisionEnterPayload } from '@react-three/rapier';
-import { ContactShadows } from '@react-three/drei';
+import { ContactShadows, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { controlsState } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useSound } from '@/hooks/useSound';
 import { vehicleTelemetry } from '@/hooks/useVehicleTelemetry';
+import { impactShake } from '@/hooks/useImpactShake';
 import { DUBAI_LANDMARKS, WORLD_BOUNDS } from '@/lib/pitchData';
 import { RAMP_CONFIGS } from '@/components/3d/TrafficObstacles';
 
@@ -165,6 +166,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const handleCollisionEnter = useCallback(
     (payload: CollisionEnterPayload) => {
       if (!payload.other.rigidBodyObject?.userData?.obstacle) return;
+      impactShake.intensity = 1;
       if (crashCooldownRef.current) return;
       crashCooldownRef.current = true;
       playCrash();
@@ -285,6 +287,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
 
     vehicleTelemetry.x = position.current.x;
     vehicleTelemetry.z = position.current.z;
+    vehicleTelemetry.speedFraction = speedFactor;
 
     // Decoupled visual mesh: lerp toward the RigidBody's own (authoritative)
     // transform rather than the just-computed target directly, using a
@@ -353,6 +356,8 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
           {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
           <DriftDust intensityRef={driftIntensity} />
           <BoostTrail intensityRef={boostIntensity} />
+          {/* Small hovering cloud of glowing "AI node" particles — a visual tell that ReSmart AI is routing this vehicle. */}
+          {!isMobile && <Sparkles count={12} scale={1.8} size={2.5} speed={0.4} opacity={0.8} color="#22d3ee" position={[0, 1.5, 0]} />}
         </group>
       </group>
     </>
@@ -475,22 +480,106 @@ function BoostTrail({ intensityRef }: { intensityRef: React.MutableRefObject<num
   );
 }
 
+const WHEEL_TRAIL_MAX_LENGTH = 3.2;
+const WHEEL_TRAIL_BASE_LENGTH = 0.4;
+
+/**
+ * Ground-hugging neon-cyan light streak anchored at each rear wheel,
+ * stretching further back and glowing brighter the faster the car is going
+ * — a persistent "wheel light-trail" independent of BoostTrail's nitro-only
+ * effect above. Reads vehicleTelemetry.speedFraction (written every frame by
+ * the parent Vehicle's own useFrame) rather than a prop, matching the same
+ * module-level read pattern useVehicleTelemetry.ts documents for MiniMap.
+ */
+function WheelLightTrails({ wheelPositions }: { wheelPositions: Array<[number, number, number]> }) {
+  const meshRefs = useRef<Array<THREE.Mesh | null>>([]);
+  const materialRefs = useRef<Array<THREE.MeshStandardMaterial | null>>([]);
+
+  useFrame(() => {
+    const speedFraction = THREE.MathUtils.clamp(vehicleTelemetry.speedFraction, 0, 1);
+    const length = WHEEL_TRAIL_BASE_LENGTH + speedFraction * WHEEL_TRAIL_MAX_LENGTH;
+
+    wheelPositions.forEach((wheelPosition, index) => {
+      const mesh = meshRefs.current[index];
+      const material = materialRefs.current[index];
+      if (!mesh || !material) return;
+      mesh.scale.y = length;
+      mesh.position.z = wheelPosition[2] - length / 2;
+      material.opacity = speedFraction * 0.55;
+    });
+  });
+
+  return (
+    <>
+      {wheelPositions.map((wheelPosition, index) => (
+        <mesh
+          key={index}
+          ref={(mesh) => {
+            meshRefs.current[index] = mesh;
+          }}
+          position={[wheelPosition[0], 0.03, wheelPosition[2]]}
+          rotation={[-Math.PI / 2, 0, 0]}
+        >
+          <planeGeometry args={[0.32, 1]} />
+          <meshStandardMaterial
+            ref={(material) => {
+              materialRefs.current[index] = material;
+            }}
+            color="#22d3ee"
+            emissive="#22d3ee"
+            emissiveIntensity={3}
+            toneMapped={false}
+            transparent
+            opacity={0}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
 interface VehicleMeshProps {
   isMobile: boolean;
 }
 
-/** Customer City Car: a compact sedan silhouette in ReSmart blue. */
+/** ReSmart metallic paint spec shared by every body panel — a proper clearcoated automotive finish rather than a flat diffuse color. */
+const METALLIC_PAINT_PROPS = {
+  metalness: 0.75,
+  roughness: 0.25,
+  clearcoat: 1,
+  clearcoatRoughness: 0.1,
+  envMapIntensity: 1.4,
+} as const;
+
+const NEON_STRIPE_PROPS = {
+  color: '#22d3ee',
+  emissive: '#22d3ee',
+  emissiveIntensity: 3,
+  toneMapped: false,
+} as const;
+
+/** Customer City Car: a compact sedan silhouette in ReSmart metallic blue with neon cyan side-stripes. */
 function CustomerCityCar({ isMobile }: VehicleMeshProps) {
   return (
     <>
       <mesh castShadow={!isMobile} position={[0, 0.4, 0]}>
         <boxGeometry args={[2, 0.8, 3.6]} />
-        <meshStandardMaterial color="#1d4ed8" />
+        <meshPhysicalMaterial {...METALLIC_PAINT_PROPS} color="#1d4ed8" />
       </mesh>
       <mesh castShadow={!isMobile} position={[0, 0.95, -0.3]}>
         <boxGeometry args={[1.6, 0.6, 1.6]} />
-        <meshStandardMaterial color="#0b1d63" />
+        <meshPhysicalMaterial {...METALLIC_PAINT_PROPS} color="#0b1d63" />
       </mesh>
+
+      {/* Neon cyan side-stripes running the length of both flanks. */}
+      {[1.01, -1.01].map((x, index) => (
+        <mesh key={`stripe-${index}`} position={[x, 0.45, 0]} rotation={[0, 0, 0]}>
+          <boxGeometry args={[0.02, 0.14, 3.2]} />
+          <meshStandardMaterial {...NEON_STRIPE_PROPS} />
+        </mesh>
+      ))}
+
       {[
         [1, 0.1, 1.2],
         [-1, 0.1, 1.2],
@@ -512,10 +601,13 @@ function CustomerCityCar({ isMobile }: VehicleMeshProps) {
         [0.65, 0.4, 1.82],
         [-0.65, 0.4, 1.82],
       ].map((lightPosition, index) => (
-        <mesh key={`headlight-${index}`} position={lightPosition as [number, number, number]}>
-          <boxGeometry args={[0.3, 0.15, 0.05]} />
-          <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
-        </mesh>
+        <group key={`headlight-${index}`} position={lightPosition as [number, number, number]}>
+          <mesh>
+            <boxGeometry args={[0.3, 0.15, 0.05]} />
+            <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
+          </mesh>
+          {!isMobile && <pointLight color="#bfe9ff" intensity={4} distance={9} decay={2} position={[0, 0, 0.3]} />}
+        </group>
       ))}
       {[
         [0.65, 0.4, -1.82],
@@ -527,19 +619,31 @@ function CustomerCityCar({ isMobile }: VehicleMeshProps) {
         </mesh>
       ))}
 
+      <WheelLightTrails
+        wheelPositions={[
+          [1, 0.1, -1.2],
+          [-1, 0.1, -1.2],
+        ]}
+      />
+
       {isMobile && <ContactShadows position={[0, -0.55, 0]} opacity={0.6} blur={2} scale={6} far={2} />}
     </>
   );
 }
 
-/** Agent Scooter: a compact two-wheel delivery scooter in ReSmart green. */
+/** Agent Scooter: a compact two-wheel delivery scooter in ReSmart metallic green with a neon cyan side-stripe. */
 function AgentScooter({ isMobile }: VehicleMeshProps) {
   return (
     <>
       {/* deck */}
       <mesh castShadow={!isMobile} position={[0, 0.25, 0]}>
         <boxGeometry args={[0.7, 0.15, 2.6]} />
-        <meshStandardMaterial color="#15803d" />
+        <meshPhysicalMaterial {...METALLIC_PAINT_PROPS} color="#15803d" />
+      </mesh>
+      {/* neon cyan side-stripe, sitting flush on top of the deck */}
+      <mesh position={[0, 0.335, 0]}>
+        <boxGeometry args={[0.72, 0.02, 2.2]} />
+        <meshStandardMaterial {...NEON_STRIPE_PROPS} />
       </mesh>
       {/* steering column */}
       <mesh castShadow={!isMobile} position={[0, 0.9, 1.15]} rotation={[0.35, 0, 0]}>
@@ -572,15 +676,20 @@ function AgentScooter({ isMobile }: VehicleMeshProps) {
         </mesh>
       ))}
       {/* headlight */}
-      <mesh position={[0, 1.1, 1.42]}>
-        <boxGeometry args={[0.3, 0.12, 0.05]} />
-        <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
-      </mesh>
+      <group position={[0, 1.1, 1.42]}>
+        <mesh>
+          <boxGeometry args={[0.3, 0.12, 0.05]} />
+          <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
+        </mesh>
+        {!isMobile && <pointLight color="#bfe9ff" intensity={4} distance={9} decay={2} position={[0, 0, 0.3]} />}
+      </group>
       {/* taillight */}
       <mesh position={[0, 0.4, -1.32]}>
         <boxGeometry args={[0.3, 0.1, 0.05]} />
         <meshStandardMaterial color="#f43f5e" emissive="#f43f5e" emissiveIntensity={2} toneMapped={false} />
       </mesh>
+
+      <WheelLightTrails wheelPositions={[[0, 0.35, -1.3]]} />
 
       {isMobile && <ContactShadows position={[0, -0.25, 0]} opacity={0.5} blur={2} scale={4} far={2} />}
     </>

@@ -7,6 +7,7 @@ import { Overlay } from '@/components/ui/Overlay';
 import { RoleSelector } from '@/components/ui/RoleSelector';
 import { LandingOverlay } from '@/components/ui/LandingOverlay';
 import { AccountPanel } from '@/components/ui/AccountPanel';
+import { ShareRankCard } from '@/components/ui/ShareRankCard';
 import { QuickDeck } from '@/components/ui/QuickDeck';
 import { CinematicBar } from '@/components/ui/CinematicBar';
 import { LeadCaptureModal } from '@/components/ui/LeadCaptureModal';
@@ -78,6 +79,7 @@ export default function Home() {
           <RoleSelector />
           <Leaderboard />
           <AccountPanel />
+          <ShareRankCard />
         </>
       )}
 

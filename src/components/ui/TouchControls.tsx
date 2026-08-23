@@ -61,7 +61,7 @@ export function TouchControls() {
         onPointerLeave={() => setBoost(false)}
         onPointerCancel={() => setBoost(false)}
         aria-label="Nitro boost"
-        className="pointer-events-auto absolute bottom-6 right-4 z-10 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full border-2 border-cyan-300/70 bg-[rgba(10,16,26,0.85)] text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30 md:hidden"
+        className="pointer-events-auto absolute bottom-6 right-4 z-10 flex h-20 w-20 touch-none select-none items-center justify-center rounded-full border-2 border-cyan-300/70 bg-darkGlass/85 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30 md:hidden"
       >
         <Zap size={30} strokeWidth={2.4} />
       </button>

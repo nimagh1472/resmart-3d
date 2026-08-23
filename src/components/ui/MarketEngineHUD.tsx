@@ -68,7 +68,7 @@ export function MarketEngineHUD() {
     <div className="pointer-events-auto absolute right-4 top-24 z-30 w-64 overflow-hidden rounded-2xl border border-cyan-400/20 bg-neutral-950/75 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
       <button
         onClick={() => setIsExpanded((value) => !value)}
-        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left"
+        className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition hover:bg-white/5"
       >
         <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-cyan-300">
           <Activity size={14} />

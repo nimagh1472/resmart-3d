@@ -44,6 +44,8 @@ interface RoleState {
   presentationMode: PresentationMode;
   activeRole: RoleType;
   hasEnteredExperience: boolean;
+  /** Forces LandingOverlay to show and RoleSelector to hide, overriding both components' usual "already onboarded" skip checks — set by goHome() below. */
+  forceShowLanding: boolean;
   completedStations: string[];
   earnings: number;
   isAudioEnabled: boolean;
@@ -87,6 +89,7 @@ interface RoleState {
   setRole: (role: RoleType) => void;
   enterExperience: () => void;
   backToHub: () => void;
+  goHome: () => void;
   setWebGLError: (isError: boolean) => void;
   setAudioEnabled: (enabled: boolean) => void;
   setCinematicZoneIndex: (index: number) => void;
@@ -116,6 +119,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   presentationMode: 'INTERACTIVE',
   activeRole: null,
   hasEnteredExperience: false,
+  forceShowLanding: false,
   completedStations: [],
   earnings: 0,
   isAudioEnabled: false,
@@ -178,11 +182,19 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       cinematicZoneIndex: mode === 'CINEMATIC' ? 0 : state.cinematicZoneIndex,
     })),
   setRole: (role) => set({ activeRole: role }),
-  enterExperience: () => set({ hasEnteredExperience: true }),
+  enterExperience: () => set({ hasEnteredExperience: true, forceShowLanding: false }),
   // Returns to the Role Selection hub from mid-gameplay without touching
   // useUserProfileStore's persisted score/rank — scores are never stored on
   // this store, so leaving a run in progress simply abandons it.
   backToHub: () => set({ activeRole: null, presentationMode: 'INTERACTIVE' }),
+  // "Home" nav action (Overlay/GameNavBar's Home button + clickable logo):
+  // forces LandingOverlay back open even for a returning visitor with a
+  // persisted profile (LandingOverlay/RoleSelector both read forceShowLanding
+  // to override their normal "already onboarded, skip straight to
+  // RoleSelector's auto-resume" behavior). enterExperience() above clears the
+  // flag again once the player clicks back through "Enter 3D Dubai Experience".
+  goHome: () =>
+    set({ activeRole: null, presentationMode: 'INTERACTIVE', hasEnteredExperience: false, forceShowLanding: true }),
   setWebGLError: (isError) => set({ isWebGLError: isError }),
   setAudioEnabled: (enabled) => set({ isAudioEnabled: enabled }),
   setCinematicZoneIndex: (index) => set({ cinematicZoneIndex: index }),

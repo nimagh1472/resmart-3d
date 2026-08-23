@@ -59,6 +59,7 @@ export function RoleSelector() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const hasEnteredExperience = useRoleStore((state) => state.hasEnteredExperience);
+  const forceShowLanding = useRoleStore((state) => state.forceShowLanding);
   const setRole = useRoleStore((state) => state.setRole);
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const { unlock } = useSound();
@@ -75,6 +76,15 @@ export function RoleSelector() {
 
   // Returning visitor: a persisted profile means they've already onboarded
   // in this browser, so resume their prior persona instead of re-prompting.
+  // Deliberately NOT keyed on isSessionActive: this should only fire once,
+  // in response to the persisted profile itself appearing (zustand's persist
+  // middleware rehydrating on first client mount). Including isSessionActive
+  // in the dependency array would re-run this effect every time it flips to
+  // false — which happens on every "Change Role" (backToHub) / "Back to
+  // Menu" (setRole(null)) / "Home" (goHome) click — and since hasResumed is
+  // still false the very first time any of those fire this session, it would
+  // immediately re-select the same persisted role right back, defeating all
+  // three of those actions on their first use.
   useEffect(() => {
     if (hasResumed || isSessionActive || !persistedEmail || !persistedRole) return;
     setHasResumed(true);
@@ -83,7 +93,8 @@ export function RoleSelector() {
     } else {
       setRole(persistedRole === 'driver' ? 'AGENT' : 'CUSTOMER');
     }
-  }, [hasResumed, isSessionActive, persistedEmail, persistedRole, setPresentationMode, setRole]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [persistedEmail, persistedRole]);
 
   // Deliberately keyed only on isSessionActive, not on the persisted profile
   // existing: a returning visitor is auto-resumed into their prior role by
@@ -98,7 +109,9 @@ export function RoleSelector() {
   // Experience" CTA (enterExperience()). Returning visitors skip the landing
   // page entirely — persistedEmail being set bypasses this check so the
   // resume effect above can still fire.
-  if (isSessionActive || (!persistedEmail && !hasEnteredExperience)) return null;
+  // forceShowLanding (set by the Home nav button/logo) takes priority — while
+  // it's set, LandingOverlay alone should be visible, not this modal underneath it.
+  if (forceShowLanding || isSessionActive || (!persistedEmail && !hasEnteredExperience)) return null;
 
   const validateEmail = (): boolean => {
     if (!EMAIL_PATTERN.test(email.trim())) {
@@ -126,8 +139,8 @@ export function RoleSelector() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-neutral-950/80 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+    <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-asphalt/80 backdrop-blur-sm">
+      <div className="animate-modal-in mx-4 w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-8 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
         <div className="flex items-center gap-2 text-cyan-300">
           <TrendingUp size={16} />
           <span className="text-xs font-semibold uppercase tracking-widest">ReSmart AI</span>

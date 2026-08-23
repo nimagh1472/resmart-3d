@@ -53,6 +53,7 @@ export function LandingOverlay() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const hasEnteredExperience = useRoleStore((state) => state.hasEnteredExperience);
+  const forceShowLanding = useRoleStore((state) => state.forceShowLanding);
   const enterExperience = useRoleStore((state) => state.enterExperience);
   const persistedEmail = useUserProfileStore((state) => state.email);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
@@ -68,7 +69,9 @@ export function LandingOverlay() {
   const isSessionActive = activeRole !== null || presentationMode === 'CINEMATIC';
   // Returning visitors (persistedEmail already set) skip straight to
   // RoleSelector's auto-resume — this only shows for a genuinely new visitor.
-  if (isSessionActive || hasEnteredExperience || persistedEmail) return null;
+  // forceShowLanding (set by the Home nav button/logo, see useRoleStore.goHome)
+  // overrides all of that so a returning visitor can explicitly get back here.
+  if (!forceShowLanding && (isSessionActive || hasEnteredExperience || persistedEmail)) return null;
 
   const handleEnter = () => {
     unlock();
@@ -76,10 +79,10 @@ export function LandingOverlay() {
   };
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-neutral-950">
+    <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-asphalt">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(217,119,6,0.1),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(168,85,247,0.12),transparent_55%)]" />
 
-      <div className="relative mx-auto flex min-h-full w-full max-w-3xl flex-col items-center justify-center px-4 py-10 sm:py-16">
+      <div className="animate-modal-in relative mx-auto flex min-h-full w-full max-w-3xl flex-col items-center justify-center px-4 py-10 sm:py-16">
         <div className="w-full rounded-3xl border border-white/15 bg-white/[0.06] p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl sm:p-10">
           <div className="flex items-center justify-center gap-2 text-amber-300">
             <Gem size={16} />

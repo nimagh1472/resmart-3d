@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import confetti from 'canvas-confetti';
-import { Award, ChevronLeft, ChevronRight, Flag, PackageCheck, PackageX, RotateCcw, Trophy } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, Flag, PackageCheck, PackageX, RotateCcw, Share2, Trophy } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getQualificationStatus, ROLE_BADGES } from '@/lib/leaderboard';
 import { GameNavBar } from '@/components/ui/GameNavBar';
+import { QuickTutorialOverlay } from '@/components/ui/QuickTutorialOverlay';
 import {
   ROAD_LENGTH,
   TARGET_PRODUCT_NAME,
@@ -44,6 +45,7 @@ export function CustomerGame() {
   const profileScore = useUserProfileStore((state) => state.score);
   const profileRank = useUserProfileStore((state) => state.rank);
   const addScore = useUserProfileStore((state) => state.addScore);
+  const openShareCard = useUserProfileStore((state) => state.openShareCard);
 
   const [runKey, setRunKey] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(COUNTDOWN_START);
@@ -123,9 +125,16 @@ export function CustomerGame() {
 
       <GameNavBar />
 
-      {/* HUD */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-4">
-        <div className="flex w-full max-w-xl items-center gap-3 rounded-full border border-purple-400/25 bg-[rgba(23,15,34,0.8)] px-4 py-2 text-xs font-medium text-neutral-100 shadow-2xl shadow-purple-500/10 backdrop-blur-[16px]">
+      {!outcome && (
+        <QuickTutorialOverlay
+          triggerKey={runKey}
+          message="Use ← → Arrows or Tap Buttons to Switch Lanes & Collect ReSmart Parcels"
+        />
+      )}
+
+      {/* HUD — top offset clears GameNavBar's top-left pill on narrow (375px-class) viewports; sm+ reverts to flush with the top edge. */}
+      <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex flex-col items-center gap-2 px-4 sm:top-0 sm:p-4">
+        <div className="flex w-full max-w-xl items-center gap-2 rounded-full border border-purple-400/25 bg-darkGlass/75 px-4 py-2 text-xs font-medium text-neutral-100 shadow-2xl shadow-purple-500/10 backdrop-blur-[16px] sm:gap-3">
           <Flag size={14} className="shrink-0 text-purple-300" />
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-purple-400 transition-[width]" style={{ width: `${progressPercent}%` }} />
@@ -136,7 +145,7 @@ export function CustomerGame() {
             <PackageCheck size={12} /> {correctPicks}/{TOTAL_TARGET_COUNT}
           </span>
         </div>
-        <div className="pointer-events-none rounded-full border border-purple-400/25 bg-[rgba(23,15,34,0.8)] px-3 py-1 text-[11px] text-neutral-300 backdrop-blur-[16px]">
+        <div className="pointer-events-none rounded-full border border-purple-400/25 bg-darkGlass/75 px-3 py-1 text-[11px] text-neutral-300 backdrop-blur-[16px]">
           Target: <span className="font-semibold text-emerald-300">{TARGET_PRODUCT_NAME}</span>
         </div>
       </div>
@@ -150,20 +159,20 @@ export function CustomerGame() {
         </div>
       )}
 
-      {/* On-screen lane controls */}
+      {/* On-screen lane controls — touch-only; desktop already has full arrow-key control. */}
       {countdown === null && !outcome && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between p-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between p-6 md:hidden">
           <button
             onPointerDown={() => requestLaneChange(-1)}
             aria-label="Switch to left lane"
-            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-purple-300/70 bg-[rgba(23,15,34,0.85)] text-purple-300 shadow-[0_0_24px_rgba(168,85,247,0.5)] backdrop-blur-md active:scale-95 active:bg-purple-500/30"
+            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-purple-300/70 bg-darkGlass/85 text-purple-300 shadow-[0_0_24px_rgba(168,85,247,0.5)] backdrop-blur-md active:scale-95 active:bg-purple-500/30"
           >
             <ChevronLeft size={28} />
           </button>
           <button
             onPointerDown={() => requestLaneChange(1)}
             aria-label="Switch to right lane"
-            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-purple-300/70 bg-[rgba(23,15,34,0.85)] text-purple-300 shadow-[0_0_24px_rgba(168,85,247,0.5)] backdrop-blur-md active:scale-95 active:bg-purple-500/30"
+            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-purple-300/70 bg-darkGlass/85 text-purple-300 shadow-[0_0_24px_rgba(168,85,247,0.5)] backdrop-blur-md active:scale-95 active:bg-purple-500/30"
           >
             <ChevronRight size={28} />
           </button>
@@ -172,8 +181,8 @@ export function CustomerGame() {
 
       {/* Finish / Game Over screen */}
       {outcome && qualification && (
-        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-neutral-950/80 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-purple-500/10 backdrop-blur-2xl">
+        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-asphalt/80 backdrop-blur-sm">
+          <div className="animate-modal-in mx-4 w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-purple-500/10 backdrop-blur-2xl">
             <div className={clsx('flex items-center gap-2', isSuccess ? 'text-purple-300' : 'text-red-400')}>
               {isSuccess ? <Trophy size={18} /> : <PackageX size={18} />}
               <span className="text-xs font-semibold uppercase tracking-widest">
@@ -230,7 +239,14 @@ export function CustomerGame() {
               )}
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <button
+              onClick={() => openShareCard('customer')}
+              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-4 py-2.5 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+            >
+              <Share2 size={14} /> Share Rank
+            </button>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 onClick={() => setRunKey((key) => key + 1)}
                 className="flex items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"

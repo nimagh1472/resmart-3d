@@ -11,6 +11,9 @@ interface UserProfileState {
   referralCode: string;
   isLeaderboardOpen: boolean;
   isAccountPanelOpen: boolean;
+  isShareCardOpen: boolean;
+  shareCardRole: ProfileRole | null;
+  hasSharedForBoost: boolean;
 
   setProfile: (email: string, role: ProfileRole) => void;
   addScore: (points: number) => void;
@@ -18,11 +21,23 @@ interface UserProfileState {
   closeLeaderboard: () => void;
   openAccountPanel: () => void;
   closeAccountPanel: () => void;
+  openShareCard: (role: ProfileRole) => void;
+  closeShareCard: () => void;
+  applyShareBoost: () => void;
 }
 
-/** Short, non-identifying code shared in referral links — derived once per profile rather than the raw email. */
-function generateReferralCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+/**
+ * Short, non-identifying `?ref=` code shared in referral links — a
+ * deterministic (not random) hash of the email, so the same visitor always
+ * gets the same code across devices/sessions without the raw address ever
+ * appearing in a shared URL.
+ */
+function hashEmailToReferralCode(email: string): string {
+  let hash = 0;
+  for (let index = 0; index < email.length; index += 1) {
+    hash = (hash * 31 + email.charCodeAt(index)) >>> 0;
+  }
+  return hash.toString(36).toUpperCase();
 }
 
 /** Recomputes rank + syncs the shared leaderboard (localStorage + best-effort API) for the current profile. */
@@ -52,9 +67,12 @@ export const useUserProfileStore = create<UserProfileState>()(
       referralCode: '',
       isLeaderboardOpen: false,
       isAccountPanelOpen: false,
+      isShareCardOpen: false,
+      shareCardRole: null,
+      hasSharedForBoost: false,
 
       setProfile: (email, role) => {
-        set((state) => ({ email, role, referralCode: state.referralCode || generateReferralCode() }));
+        set((state) => ({ email, role, referralCode: state.referralCode || hashEmailToReferralCode(email) }));
         const rank = syncLeaderboard(email, role, get().score);
         set({ rank });
       },
@@ -72,6 +90,19 @@ export const useUserProfileStore = create<UserProfileState>()(
       closeLeaderboard: () => set({ isLeaderboardOpen: false }),
       openAccountPanel: () => set({ isAccountPanelOpen: true }),
       closeAccountPanel: () => set({ isAccountPanelOpen: false }),
+
+      openShareCard: (role) => set({ isShareCardOpen: true, shareCardRole: role }),
+      closeShareCard: () => set({ isShareCardOpen: false }),
+
+      // One-time +10% score boost for copying/sharing the referral link (see
+      // ShareRankCard.tsx) — guarded by hasSharedForBoost (persisted below)
+      // so re-sharing repeatedly can't be farmed for repeat boosts.
+      applyShareBoost: () => {
+        if (get().hasSharedForBoost) return;
+        set({ hasSharedForBoost: true });
+        const boost = Math.round(get().score * 0.1);
+        if (boost > 0) get().addScore(boost);
+      },
     }),
     {
       name: 'resmart_user_profile',
@@ -81,6 +112,7 @@ export const useUserProfileStore = create<UserProfileState>()(
         score: state.score,
         rank: state.rank,
         referralCode: state.referralCode,
+        hasSharedForBoost: state.hasSharedForBoost,
       }),
     },
   ),

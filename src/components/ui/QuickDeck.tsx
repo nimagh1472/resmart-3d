@@ -27,12 +27,16 @@ export function QuickDeck() {
   if (!isOpen) return null;
 
   return (
-    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/60 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-asphalt/60 backdrop-blur-sm">
+      <div className="animate-modal-in w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Key Figures</h3>
-          <button onClick={() => setQuickDeckOpen(false)} aria-label="Close quick pitch deck">
-            <X size={16} className="text-neutral-500" />
+          <button
+            onClick={() => setQuickDeckOpen(false)}
+            aria-label="Close quick pitch deck"
+            className="text-neutral-500 transition hover:text-neutral-900"
+          >
+            <X size={16} />
           </button>
         </div>
 
@@ -43,8 +47,9 @@ export function QuickDeck() {
                 <span className="text-sm text-neutral-700">{metric.label}</span>
                 <span className="text-sm font-semibold text-neutral-900">{formatValue(metric.value)}</span>
               </div>
-              <p className="mt-0.5 text-xs text-neutral-400">{metric.assumption}</p>
-              <p className="text-[10px] uppercase tracking-wide text-neutral-300">{metric.source}</p>
+              {/* text-neutral-500/600 (not the -400/-300 this used to be) — those fail WCAG contrast on this white card. */}
+              <p className="mt-0.5 text-xs text-neutral-500">{metric.assumption}</p>
+              <p className="text-[10px] uppercase tracking-wide text-neutral-500">{metric.source}</p>
             </li>
           ))}
         </ul>

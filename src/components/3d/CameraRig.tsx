@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { controlsState } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
+import { impactShake } from '@/hooks/useImpactShake';
 import { CINEMATIC_DWELL_SECONDS, STATIONS } from '@/lib/pitchData';
 import type { PresentationMode } from '@/types';
 
@@ -68,6 +69,14 @@ const BASE_FOV = 42;
 const BOOST_FOV = 58;
 const FOV_RESPONSE = 4;
 
+// Impact screen-shake: impactShake.intensity is set to 1 by Vehicle.tsx on
+// every obstacle collision and decays back to 0 here at SHAKE_DECAY per
+// second; the visible jitter magnitude/frequency scale off that decaying
+// intensity so a hit reads as an instant punch that quickly settles.
+const SHAKE_DECAY = 4.5;
+const SHAKE_MAGNITUDE = 0.5;
+const SHAKE_FREQUENCY = 26;
+
 /**
  * Drives the camera per presentation mode, using only native R3F/three.js
  * primitives (Vector3.lerp for position, Quaternion.slerp for orientation —
@@ -105,8 +114,13 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
   const guidedZoneTarget = useRef(new THREE.Vector3());
   const offsetScratch = useRef(new THREE.Vector3());
   const lookOffsetScratch = useRef(new THREE.Vector3());
+  // Undamped by shake — camera.position itself gets a jitter offset added on
+  // top of this every frame (see SHAKE_* below), so this must stay the shake-
+  // free base the lerp is smoothing toward, or the jitter would compound.
+  const smoothedPosition = useRef(new THREE.Vector3(0, 30, 45));
+  const shakeOffset = useRef(new THREE.Vector3());
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const vehicle = vehicleRef.current;
 
     const enteringCinematic = presentationMode === 'CINEMATIC' && previousMode.current !== 'CINEMATIC';
@@ -170,16 +184,32 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       desiredPosition.current.y = Math.max(desiredPosition.current.y, vehiclePosition.current.y + MIN_HEIGHT_ABOVE_VEHICLE);
     }
 
-    camera.position.lerp(desiredPosition.current, dampFactor(POSITION_RESPONSE[presentationMode], delta));
+    smoothedPosition.current.lerp(desiredPosition.current, dampFactor(POSITION_RESPONSE[presentationMode], delta));
+    camera.position.copy(smoothedPosition.current);
 
     // Built directly from Matrix4.lookAt (eye, target, up) rather than via a
     // helper Object3D's own .lookAt(): Object3D (unlike Camera/Light) treats
     // +Z as "forward", so a plain-Object3D helper produces an orientation
     // that's backwards for a camera. Computing the matrix ourselves keeps
-    // the camera/light forward-is-"-Z" convention.
-    lookMatrix.current.lookAt(camera.position, lookTarget.current, camera.up);
+    // the camera/light forward-is-"-Z" convention. Uses the shake-free
+    // smoothedPosition (not the jittered camera.position below) so a hit
+    // rattles the frame without the look-at target itself swimming.
+    lookMatrix.current.lookAt(smoothedPosition.current, lookTarget.current, camera.up);
     desiredQuaternion.current.setFromRotationMatrix(lookMatrix.current);
     camera.quaternion.slerp(desiredQuaternion.current, dampFactor(ROTATION_RESPONSE[presentationMode], delta));
+
+    // Impact screen-shake: decay the collision-triggered intensity, then
+    // layer a high-frequency jittered offset on top of the already-settled
+    // camera.position (never fed back into smoothedPosition, so it can't
+    // compound frame-over-frame).
+    impactShake.intensity = THREE.MathUtils.damp(impactShake.intensity, 0, SHAKE_DECAY, delta);
+    if (impactShake.intensity > 0.001) {
+      const t = state.clock.elapsedTime;
+      shakeOffset.current
+        .set(Math.sin(t * SHAKE_FREQUENCY), Math.cos(t * SHAKE_FREQUENCY * 1.3), Math.sin(t * SHAKE_FREQUENCY * 0.7))
+        .multiplyScalar(impactShake.intensity * SHAKE_MAGNITUDE);
+      camera.position.add(shakeOffset.current);
+    }
 
     if (camera instanceof THREE.PerspectiveCamera) {
       const isBoosting = Boolean(vehicle) && presentationMode !== 'CINEMATIC' && controlsState.boost;

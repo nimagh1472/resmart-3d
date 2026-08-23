@@ -89,7 +89,7 @@ export function Experience() {
         <Physics gravity={[0, -9.81, 0]}>
           <Environment isMobile={isMobile} />
           <Ground />
-          <World />
+          <World isMobile={isMobile} />
           <TrafficObstacles vehicleRef={vehicleRef} />
           <Zones vehicleRef={vehicleRef} />
           <Vehicle ref={vehicleRef} isMobile={isMobile} />

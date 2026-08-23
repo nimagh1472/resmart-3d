@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
-import { Car, ChevronLeft, Clapperboard, FileText, IdCard, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
+import { Car, ChevronLeft, Clapperboard, FileText, Home, IdCard, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
@@ -50,6 +50,7 @@ export function Overlay() {
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
   const backToHub = useRoleStore((state) => state.backToHub);
+  const goHome = useRoleStore((state) => state.goHome);
   const chapterIndex = useRoleStore((state) => (activeRole ? state.chapterIndex[activeRole as StoryRoleKey] : null));
   const customerWallet = useRoleStore((state) => state.customerWallet);
   const driverEarnings = useRoleStore((state) => state.driverEarnings);
@@ -78,9 +79,15 @@ export function Overlay() {
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-2 p-4">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-[rgba(0,240,255,0.25)] bg-[rgba(10,16,26,0.8)] backdrop-blur-[16px] px-4 py-2 text-sm font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10">
-          <Sparkles size={14} className="text-purple-400" />
-          <span className="font-semibold text-white">ReSmart AI</span>
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-neonCyan/25 bg-darkGlass/75 backdrop-blur-[16px] px-4 py-2 text-sm font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10">
+          <button
+            onClick={goHome}
+            aria-label="Return to the ReSmart AI home screen"
+            className="flex items-center gap-1.5 transition hover:opacity-80"
+          >
+            <Sparkles size={14} className="text-purple-400" />
+            <span className="font-semibold text-white">ReSmart AI</span>
+          </button>
           <span className="text-white/10">|</span>
           <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-neutral-300">
             {getRoleLabel(activeRole, presentationMode)}
@@ -104,20 +111,28 @@ export function Overlay() {
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-[rgba(0,240,255,0.25)] bg-[rgba(10,16,26,0.8)] backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-neonCyan/25 bg-darkGlass/75 backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
           {isSessionActive && (
             <>
               <button
                 onClick={backToHub}
                 className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:bg-white/10"
               >
-                <ChevronLeft size={14} /> Hub
+                <ChevronLeft size={14} /> <span className="hidden sm:inline">Hub</span>
+              </button>
+              <button
+                onClick={goHome}
+                aria-label="Return to home screen"
+                className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
+              >
+                <Home size={14} />
               </button>
               <span className="text-white/10">|</span>
             </>
           )}
           <button
             onClick={() => setPresentationMode('INTERACTIVE')}
+            aria-label="Switch to interactive 3D drive"
             className={clsx(
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
               presentationMode === 'INTERACTIVE'
@@ -126,10 +141,11 @@ export function Overlay() {
             )}
           >
             <Car size={14} />
-            3D Drive
+            <span className="hidden sm:inline">3D Drive</span>
           </button>
           <button
             onClick={() => setPresentationMode('CINEMATIC')}
+            aria-label="Switch to cinematic investor tour"
             className={clsx(
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
               presentationMode === 'CINEMATIC'
@@ -138,7 +154,7 @@ export function Overlay() {
             )}
           >
             <Clapperboard size={14} />
-            Cinematic Tour
+            <span className="hidden sm:inline">Cinematic Tour</span>
           </button>
           <button
             onClick={toggleAudio}

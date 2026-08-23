@@ -36,7 +36,7 @@ export function FeaturePopupHUD() {
     <div className="pointer-events-none absolute inset-x-0 top-20 z-50 flex justify-center">
       <div
         key={popup.id}
-        className="animate-feature-pop flex max-w-md items-start gap-3 rounded-2xl border border-purple-400/40 bg-gradient-to-br from-neutral-900 to-neutral-950 px-5 py-4 text-left shadow-2xl shadow-purple-500/30"
+        className="animate-feature-pop flex max-w-md items-start gap-3 rounded-2xl border border-purple-400/40 bg-gradient-to-br from-neutral-900 to-asphalt px-5 py-4 text-left shadow-2xl shadow-purple-500/30"
       >
         <div className="mt-0.5 rounded-full bg-purple-500/20 p-2 text-purple-300">
           <Sparkles size={18} />

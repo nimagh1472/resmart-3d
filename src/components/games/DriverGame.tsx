@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import confetti from 'canvas-confetti';
-import { Award, ChevronLeft, ChevronRight, Flag, RotateCcw, Trophy, Zap } from 'lucide-react';
+import { Award, ChevronLeft, ChevronRight, Flag, RotateCcw, Share2, Trophy, Zap } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getQualificationStatus, ROLE_BADGES } from '@/lib/leaderboard';
 import { GameNavBar } from '@/components/ui/GameNavBar';
+import { QuickTutorialOverlay } from '@/components/ui/QuickTutorialOverlay';
 import {
   ROAD_LENGTH,
   TOTAL_NODE_COUNT,
@@ -43,6 +44,7 @@ export function DriverGame() {
   const profileScore = useUserProfileStore((state) => state.score);
   const profileRank = useUserProfileStore((state) => state.rank);
   const addScore = useUserProfileStore((state) => state.addScore);
+  const openShareCard = useUserProfileStore((state) => state.openShareCard);
 
   const [runKey, setRunKey] = useState(0);
   const [countdown, setCountdown] = useState<number | null>(COUNTDOWN_START);
@@ -125,9 +127,16 @@ export function DriverGame() {
 
       <GameNavBar />
 
-      {/* HUD */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col items-center gap-2 p-4">
-        <div className="flex w-full max-w-xl items-center gap-3 rounded-full border border-cyan-400/25 bg-[rgba(10,16,26,0.8)] px-4 py-2 text-xs font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10 backdrop-blur-[16px]">
+      {!result && (
+        <QuickTutorialOverlay
+          triggerKey={runKey}
+          message="Use ← → Arrows or Tap Buttons to Switch Lanes & Collect ReSmart Nodes"
+        />
+      )}
+
+      {/* HUD — top offset clears GameNavBar's top-left pill on narrow (375px-class) viewports, where it would otherwise sit centered directly on top of it; sm+ reverts to flush with the top edge. */}
+      <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex flex-col items-center gap-2 px-4 sm:top-0 sm:p-4">
+        <div className="flex w-full max-w-xl items-center gap-2 rounded-full border border-neonCyan/25 bg-darkGlass/75 px-4 py-2 text-xs font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10 backdrop-blur-[16px] sm:gap-3">
           <Flag size={14} className="shrink-0 text-cyan-300" />
           <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
             <div className="h-full rounded-full bg-cyan-400 transition-[width]" style={{ width: `${progressPercent}%` }} />
@@ -140,7 +149,12 @@ export function DriverGame() {
           <span className="shrink-0 text-white/10">|</span>
           <span className={clsx('shrink-0', collisionCount > 0 ? 'text-red-400' : 'text-neutral-400')}>{collisionCount} hits</span>
           {speedState !== 'normal' && (
-            <span className={clsx('shrink-0 flex items-center gap-1', speedState === 'boost' ? 'text-cyan-300' : 'text-orange-400')}>
+            <span
+              className={clsx(
+                'hidden shrink-0 items-center gap-1 sm:flex',
+                speedState === 'boost' ? 'text-cyan-300' : 'text-orange-400',
+              )}
+            >
               <Zap size={12} /> {speedState === 'boost' ? 'BOOST' : 'SLOWED'}
             </span>
           )}
@@ -154,20 +168,20 @@ export function DriverGame() {
         </div>
       )}
 
-      {/* On-screen lane controls */}
+      {/* On-screen lane controls — touch-only; desktop already has full arrow-key control, so these stay hidden there to avoid redundant on-screen clutter (matching TouchControls.tsx's md:hidden convention). */}
       {countdown === null && !result && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between p-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-center justify-between p-6 md:hidden">
           <button
             onPointerDown={() => requestLaneChange(-1)}
             aria-label="Switch to left lane"
-            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-cyan-300/70 bg-[rgba(10,16,26,0.85)] text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30"
+            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-cyan-300/70 bg-darkGlass/85 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30"
           >
             <ChevronLeft size={28} />
           </button>
           <button
             onPointerDown={() => requestLaneChange(1)}
             aria-label="Switch to right lane"
-            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-cyan-300/70 bg-[rgba(10,16,26,0.85)] text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30"
+            className="pointer-events-auto flex h-16 w-16 items-center justify-center rounded-full border-2 border-cyan-300/70 bg-darkGlass/85 text-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.5)] backdrop-blur-md active:scale-95 active:bg-cyan-500/30"
           >
             <ChevronRight size={28} />
           </button>
@@ -176,8 +190,8 @@ export function DriverGame() {
 
       {/* Game-over / success screen */}
       {result && qualification && (
-        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-neutral-950/80 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+        <div className="pointer-events-auto absolute inset-0 z-30 flex items-center justify-center bg-asphalt/80 backdrop-blur-sm">
+          <div className="animate-modal-in mx-4 w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
             <div className="flex items-center gap-2 text-cyan-300">
               <Trophy size={18} />
               <span className="text-xs font-semibold uppercase tracking-widest">Point B Reached</span>
@@ -239,7 +253,14 @@ export function DriverGame() {
               )}
             </div>
 
-            <div className="mt-5 grid grid-cols-2 gap-3">
+            <button
+              onClick={() => openShareCard('driver')}
+              className="mt-4 flex w-full items-center justify-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-4 py-2.5 text-sm font-medium text-cyan-200 transition hover:bg-cyan-400/20"
+            >
+              <Share2 size={14} /> Share Rank
+            </button>
+
+            <div className="mt-3 grid grid-cols-2 gap-3">
               <button
                 onClick={() => setRunKey((key) => key + 1)}
                 className="flex items-center justify-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/10"
