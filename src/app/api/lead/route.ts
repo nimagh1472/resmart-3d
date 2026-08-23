@@ -6,6 +6,8 @@ interface LeadPayload {
   role?: string;
   wantsEarlyAccess?: boolean;
   source?: string | null;
+  voucherCode?: string | null;
+  totalGameEarnings?: number;
 }
 
 /**
@@ -33,6 +35,8 @@ export async function POST(request: Request) {
     role: payload.role ?? 'Shopper',
     wantsEarlyAccess: Boolean(payload.wantsEarlyAccess),
     source: payload.source ?? null,
+    voucherCode: payload.voucherCode ?? null,
+    totalGameEarnings: payload.totalGameEarnings ?? null,
     receivedAt: new Date().toISOString(),
   });
 

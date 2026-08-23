@@ -9,6 +9,7 @@ import { QuickDeck } from '@/components/ui/QuickDeck';
 import { CinematicBar } from '@/components/ui/CinematicBar';
 import { LeadCaptureModal } from '@/components/ui/LeadCaptureModal';
 import { FeaturePopupHUD } from '@/components/ui/FeaturePopupHUD';
+import { StoryHUD } from '@/components/ui/StoryHUD';
 
 const Experience = dynamic(() => import('@/components/3d/Experience').then((mod) => mod.Experience), {
   ssr: false,
@@ -36,6 +37,7 @@ export default function Home() {
           <RoleSelector />
           <LeadCaptureModal />
           <FeaturePopupHUD />
+          <StoryHUD />
         </>
       )}
 

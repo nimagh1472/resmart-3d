@@ -3,13 +3,20 @@
 import { useState, type FormEvent } from 'react';
 import clsx from 'clsx';
 import confetti from 'canvas-confetti';
-import { Mail, User, X, Zap } from 'lucide-react';
+import { Gift, Mail, PartyPopper, User, X, Zap } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 
 type LeadRole = 'Investor' | 'Shopper' | 'ReSmart Agent';
 
 const ROLE_OPTIONS: LeadRole[] = ['Investor', 'Shopper', 'ReSmart Agent'];
 const LEADS_STORAGE_KEY = 'resmart_leads';
+const CAMPAIGN_COMPLETE_SOURCE = 'campaign_complete';
+
+const currencyFormatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  maximumFractionDigits: 0,
+});
 
 interface StoredLead {
   name: string;
@@ -18,6 +25,8 @@ interface StoredLead {
   wantsEarlyAccess: boolean;
   source: string | null;
   submittedAt: string;
+  voucherCode?: string | null;
+  totalGameEarnings?: number;
 }
 
 function saveLeadLocally(lead: StoredLead) {
@@ -43,6 +52,10 @@ export function LeadCaptureModal() {
   const leadModalSource = useRoleStore((state) => state.leadModalSource);
   const closeLeadModal = useRoleStore((state) => state.closeLeadModal);
   const markLeadSubmitted = useRoleStore((state) => state.markLeadSubmitted);
+  const voucherCode = useRoleStore((state) => state.voucherCode);
+  const voucherCount = useRoleStore((state) => state.voucherCount);
+  const voucherValue = useRoleStore((state) => state.voucherValue);
+  const campaignTotalEarnings = useRoleStore((state) => state.campaignTotalEarnings);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -52,6 +65,8 @@ export function LeadCaptureModal() {
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const isCampaignComplete = leadModalSource === CAMPAIGN_COMPLETE_SOURCE;
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -70,6 +85,7 @@ export function LeadCaptureModal() {
       wantsEarlyAccess,
       source: leadModalSource,
       submittedAt: new Date().toISOString(),
+      ...(isCampaignComplete ? { voucherCode, totalGameEarnings: campaignTotalEarnings } : {}),
     };
 
     saveLeadLocally(lead);
@@ -109,13 +125,39 @@ export function LeadCaptureModal() {
         </button>
 
         <div className="flex items-center gap-2 text-purple-400">
-          <Zap size={18} />
+          {isCampaignComplete ? <PartyPopper size={18} /> : <Zap size={18} />}
           <span className="text-xs font-semibold uppercase tracking-widest">ReSmart AI</span>
         </div>
-        <h2 className="mt-2 text-xl font-semibold text-white">Get VIP Early Access</h2>
+        <h2 className="mt-2 text-xl font-semibold text-white">
+          {isCampaignComplete ? 'Campaign Completed!' : 'Get VIP Early Access'}
+        </h2>
         <p className="mt-1 text-sm text-neutral-400">
-          Leave your details and we&apos;ll follow up with early access and a free delivery voucher.
+          {isCampaignComplete
+            ? "You finished the full campaign — here's what you earned."
+            : "Leave your details and we'll follow up with early access and a free delivery voucher."}
         </p>
+
+        {isCampaignComplete && (
+          <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-widest text-emerald-300">Total Game Earnings</span>
+              <span className="text-lg font-semibold text-white">{currencyFormatter.format(campaignTotalEarnings)}</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between border-t border-emerald-500/20 pt-2">
+              <span className="flex items-center gap-1.5 text-xs uppercase tracking-widest text-emerald-300">
+                <Gift size={12} /> Real Off Voucher
+              </span>
+              <span className="text-sm font-semibold text-white">
+                {voucherCount > 0 ? `$${voucherValue} off` : 'Keep earning — $1,000 unlocks $5 off'}
+              </span>
+            </div>
+            {voucherCode && (
+              <p className="mt-2 rounded-lg bg-neutral-950/60 px-3 py-2 text-center font-mono text-sm tracking-widest text-amber-300">
+                {voucherCode}
+              </p>
+            )}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
@@ -184,7 +226,7 @@ export function LeadCaptureModal() {
             disabled={isSubmitting}
             className="w-full rounded-full bg-gradient-to-r from-purple-500 to-green-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
           >
-            {isSubmitting ? 'Submitting…' : 'Claim Early Access'}
+            {isSubmitting ? 'Submitting…' : isCampaignComplete ? 'Claim Your Voucher' : 'Claim Early Access'}
           </button>
         </form>
       </div>

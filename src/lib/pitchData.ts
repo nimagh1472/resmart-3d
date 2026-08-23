@@ -1,4 +1,14 @@
-import type { BusinessFeature, BusinessFeatureKey, CashbackPickup, PitchMetric, StationDefinition, WorldBounds } from '@/types';
+import type {
+  BusinessFeature,
+  BusinessFeatureKey,
+  CashbackPickup,
+  PitchMetric,
+  StationDefinition,
+  StoryChapterDef,
+  StoryRoleKey,
+  VoucherReward,
+  WorldBounds,
+} from '@/types';
 
 /**
  * Single source of truth for every pitch figure, boundary, and zone used across
@@ -14,6 +24,27 @@ export const WORLD_BOUNDS: WorldBounds = {
 };
 
 export const PITCH_DECK_PATH = '/assets/resmart-pitch-deck.pdf';
+
+/**
+ * Downtown Dubai landmark references driving World.tsx's layout: a Burj
+ * Khalifa-inspired central tower ringed by a Sheikh Mohammed bin Rashid
+ * Boulevard-style curved road, with a Dubai Mall / Dubai Fountain district
+ * off to one side.
+ */
+export const DUBAI_LANDMARKS = {
+  CENTRAL_TOWER_POSITION: [0, 0, 0] as [number, number, number],
+  // The vehicle is a fully scripted kinematic body (see Vehicle.tsx) — it
+  // never reacts to Rapier collisions, so the Central Tower's "no driving
+  // through it" behavior is enforced by Vehicle.tsx pushing the vehicle's
+  // computed position out to this radius, not by a physics collider.
+  CENTRAL_TOWER_EXCLUSION_RADIUS: 9.5,
+  BOULEVARD_INNER_RADIUS: 14,
+  BOULEVARD_OUTER_RADIUS: 24,
+  MALL_DISTRICT_CENTER: [45, 0, 45] as [number, number, number],
+  // Kept well clear of CUSTOMER_STORE's 6-unit trigger radius (also at
+  // [45,0,45]) and its HolographicSearchLens feature at [45,0,41].
+  FOUNTAIN_POSITION: [45, 0, 26] as [number, number, number],
+};
 
 /**
  * How long the CINEMATIC tour lingers on each zone before advancing.
@@ -80,10 +111,10 @@ export const PITCH_METRICS: Record<string, PitchMetric> = {
 export const STATIONS: StationDefinition[] = [
   {
     id: 'CUSTOMER_STORE',
-    title: 'Store Station',
+    title: 'AI Vision Search — Dubai Mall Hub',
     description:
-      'Holographic Search Lens: drive in to trigger an AI scan revealing lower prices and open-box deals nearby.',
-    position: [60, 0, 60],
+      'Holographic Search Lens outside the Dubai Mall district: drive in to trigger an AI scan revealing lower prices and open-box deals nearby.',
+    position: [45, 0, 45],
     visibleTo: ['CUSTOMER'],
     metricKeys: [],
     investorPitchLine: {
@@ -95,9 +126,10 @@ export const STATIONS: StationDefinition[] = [
   },
   {
     id: 'CUSTOMER_EXPRESS',
-    title: 'Express Pickup Ramp',
-    description: 'Stunt ramp with a glowing countdown billboard: place your order with a guaranteed sub-2-hour ETA.',
-    position: [60, 0, -60],
+    title: 'Boulevard Express Ramp',
+    description:
+      'Stunt ramp beside the Central Tower boulevard, with a glowing countdown billboard: place your order with a guaranteed sub-2-hour ETA.',
+    position: [0, 0, -34],
     visibleTo: ['CUSTOMER'],
     metricKeys: [],
     investorPitchLine: {
@@ -108,9 +140,9 @@ export const STATIONS: StationDefinition[] = [
   },
   {
     id: 'AGENT_DISPATCH',
-    title: 'Pickup Station',
-    description: 'Dispatch kiosk: accept a live customer order and start the delivery run.',
-    position: [-60, 0, 60],
+    title: 'ReSmart Hub — The Boulevard',
+    description: 'Dispatch kiosk on the Boulevard: accept a live customer order and start the delivery run.',
+    position: [-45, 0, 45],
     visibleTo: ['AGENT'],
     metricKeys: [],
     investorPitchLine: {
@@ -121,10 +153,10 @@ export const STATIONS: StationDefinition[] = [
   },
   {
     id: 'AGENT_VERIFY',
-    title: 'Certified Refurbished Merchant Station',
+    title: 'Merchant Test Station',
     description:
-      'Tech test bench: physically verify the gadget condition before it ships and earn a testing fee.',
-    position: [-60, 0, 0],
+      'Certified Refurbished tech test bench: physically verify the gadget condition before it ships and earn a testing fee.',
+    position: [-45, 0, -45],
     visibleTo: ['AGENT'],
     metricKeys: ['netMarginPerOrder'],
     requiresStation: 'AGENT_DISPATCH',
@@ -137,9 +169,10 @@ export const STATIONS: StationDefinition[] = [
   },
   {
     id: 'AGENT_DROPOFF',
-    title: 'Express Drop-off',
-    description: 'Speed ramp finish line: complete the delivery, launch the confetti, and bank your earnings.',
-    position: [-60, 0, -60],
+    title: 'Express Drop-off — City Center',
+    description:
+      'Speed ramp finish line across the city center from the Boulevard hub: complete the delivery, launch the confetti, and bank your earnings.',
+    position: [45, 0, -45],
     visibleTo: ['AGENT'],
     metricKeys: [],
     requiresStation: 'AGENT_VERIFY',
@@ -166,12 +199,98 @@ export const STATIONS: StationDefinition[] = [
   },
 ];
 
+/** Cashback Gems — Story B, Chapter 2: collect all 3 while cruising the Boulevard ring. */
 export const CASHBACK_PICKUPS: CashbackPickup[] = [
-  { id: 'cashback-1', position: [30, 0, 30], amount: 8 },
-  { id: 'cashback-2', position: [45, 0, 10], amount: 5 },
-  { id: 'cashback-3', position: [15, 0, 45], amount: 12 },
-  { id: 'cashback-4', position: [55, 0, 25], amount: 15 },
+  { id: 'cashback-1', position: [18, 0, 8], amount: 8 },
+  { id: 'cashback-2', position: [-15, 0, 12], amount: 5 },
+  { id: 'cashback-3', position: [2, 0, -19], amount: 12 },
 ];
+
+/**
+ * Story-driven campaign copy for both roles, shown by ui/StoryHUD.tsx.
+ * Chapter progression itself is tracked/advanced in hooks/useRoleStore.ts;
+ * this is purely the narrative text for each chapter.
+ */
+export const CAMPAIGN_TITLES: Record<StoryRoleKey, string> = {
+  CUSTOMER: 'The Smart Shopper',
+  AGENT: 'The Certified Hero',
+};
+
+export const STORY_CHAPTERS: Record<StoryRoleKey, StoryChapterDef[]> = {
+  CUSTOMER: [
+    {
+      title: 'Chapter 1: The Price Hunt',
+      guideDialogue:
+        "Every dirham counts. Drive to the AI Vision Search hub near Dubai Mall — let's scan local store prices and prove we can save you $200+.",
+      objective: 'Reach the AI Vision Search Hub near Dubai Mall',
+    },
+    {
+      title: 'Chapter 2: Boulevard Bounty',
+      guideDialogue:
+        'Nice find! Now cruise the Boulevard around the Central Tower and collect all 3 floating Cashback Gems — free money, no catch.',
+      objective: 'Collect 3 Cashback Gems',
+    },
+    {
+      title: 'Chapter 3: The Guarantee',
+      guideDialogue:
+        "One more stop. Hit the 2-Hour Express Ramp near the Central Tower and lock in your first guaranteed instant order.",
+      objective: 'Place your order at the Boulevard Express Ramp',
+    },
+  ],
+  AGENT: [
+    {
+      title: 'Chapter 1: The Call',
+      guideDialogue:
+        'An urgent delivery just came in. Get to the ReSmart Hub on the Boulevard and accept the order.',
+      objective: 'Accept the urgent order at the ReSmart Hub',
+    },
+    {
+      title: 'Chapter 2: Trust, Verified',
+      guideDialogue:
+        "Before it ships, prove it's good. Drive to the Merchant Test Station, inspect the gadget, and stamp it Certified Verified.",
+      objective: 'Certify the gadget at the Merchant Test Station ($25 fee)',
+    },
+    {
+      title: 'Chapter 3: Race the Clock',
+      guideDialogue:
+        "The clock's running. Cross the city center and hit the Express Drop-off before the 2-hour timer runs out.",
+      objective: 'Complete the Express Drop-off before time runs out',
+    },
+  ],
+};
+
+/**
+ * Real-world voucher conversion: every $1,000 earned/saved in-game converts
+ * to a $5 Real Off voucher, redeemable at ReSmart launch. A full campaign
+ * playthrough's wallet total is topped up with a completion bonus so a
+ * finished campaign always clears at least one voucher tier.
+ */
+export const VOUCHER_CONVERSION = {
+  earningsPerVoucher: 1000,
+  voucherValuePerTier: 5,
+};
+
+export const CAMPAIGN_COMPLETION_BONUS: Record<StoryRoleKey, number> = {
+  CUSTOMER: 900,
+  AGENT: 900,
+};
+
+const VOUCHER_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+function generateVoucherCode(): string {
+  let code = '';
+  for (let i = 0; i < 6; i += 1) {
+    code += VOUCHER_CODE_CHARS[Math.floor(Math.random() * VOUCHER_CODE_CHARS.length)];
+  }
+  return `RESMART-${code}`;
+}
+
+/** Pure conversion of total in-game earnings/savings into a real-world voucher reward. */
+export function calculateVoucherReward(totalEarnings: number): VoucherReward {
+  const voucherCount = Math.floor(totalEarnings / VOUCHER_CONVERSION.earningsPerVoucher);
+  const voucherValue = voucherCount * VOUCHER_CONVERSION.voucherValuePerTier;
+  return { voucherCount, voucherValue, code: voucherCount > 0 ? generateVoucherCode() : null };
+}
 
 export const BUSINESS_FEATURES: Record<BusinessFeatureKey, BusinessFeature> = {
   AI_COMPARISON: {

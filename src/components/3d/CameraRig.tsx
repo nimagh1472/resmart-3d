@@ -14,10 +14,21 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 12, 18);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 10, 16);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
 const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
-const MIN_HEIGHT_ABOVE_VEHICLE = 6;
+const MIN_HEIGHT_ABOVE_VEHICLE = 5;
+
+/**
+ * Converts a per-second exponential-approach "response" rate into the
+ * instantaneous factor Vector3.lerp/Quaternion.slerp expect, given this
+ * frame's delta — the same framerate-independent damping Vehicle.tsx's local
+ * damp() uses, just expressed as a factor rather than wrapped around lerp
+ * itself, since a Quaternion has no componentwise damp of its own.
+ */
+function dampFactor(response: number, delta: number): number {
+  return 1 - Math.exp(-response * delta);
+}
 
 // Overview shown before a vehicle exists or a role has been picked, so the
 // camera never defaults to an unframed/undefined view (e.g. pointing at the
@@ -34,15 +45,18 @@ const TOUR_ORBIT_ANGULAR_SPEED = 0.3; // rad/sec
 const GUIDED_REVEAL_RANGE = 40;
 const GUIDED_REVEAL_STRENGTH = 0.6;
 
-const POSITION_SMOOTHING: Record<PresentationMode, number> = {
-  INTERACTIVE: 0.08,
-  GUIDED: 0.04,
-  CINEMATIC: 0.03,
+// Response rates (per second) for the framerate-independent exponential
+// damp — replaces the old raw per-frame lerp factors (which were implicitly
+// tuned for ~60fps and would drift at other frame rates).
+const POSITION_RESPONSE: Record<PresentationMode, number> = {
+  INTERACTIVE: 5,
+  GUIDED: 2.5,
+  CINEMATIC: 1.8,
 };
-const ROTATION_SMOOTHING: Record<PresentationMode, number> = {
-  INTERACTIVE: 0.12,
-  GUIDED: 0.06,
-  CINEMATIC: 0.04,
+const ROTATION_RESPONSE: Record<PresentationMode, number> = {
+  INTERACTIVE: 7,
+  GUIDED: 3.5,
+  CINEMATIC: 2.5,
 };
 
 /**
@@ -144,7 +158,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       desiredPosition.current.y = Math.max(desiredPosition.current.y, vehiclePosition.current.y + MIN_HEIGHT_ABOVE_VEHICLE);
     }
 
-    camera.position.lerp(desiredPosition.current, POSITION_SMOOTHING[presentationMode]);
+    camera.position.lerp(desiredPosition.current, dampFactor(POSITION_RESPONSE[presentationMode], delta));
 
     // Built directly from Matrix4.lookAt (eye, target, up) rather than via a
     // helper Object3D's own .lookAt(): Object3D (unlike Camera/Light) treats
@@ -153,7 +167,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
     // the camera/light forward-is-"-Z" convention.
     lookMatrix.current.lookAt(camera.position, lookTarget.current, camera.up);
     desiredQuaternion.current.setFromRotationMatrix(lookMatrix.current);
-    camera.quaternion.slerp(desiredQuaternion.current, ROTATION_SMOOTHING[presentationMode]);
+    camera.quaternion.slerp(desiredQuaternion.current, dampFactor(ROTATION_RESPONSE[presentationMode], delta));
   });
 
   return null;

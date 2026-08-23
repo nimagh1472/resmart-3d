@@ -6,8 +6,7 @@ import clsx from 'clsx';
 import { Car, Clapperboard, FileText, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useSound } from '@/hooks/useSound';
-import { CASHBACK_PICKUPS } from '@/lib/pitchData';
-import type { AgentOrderStage, PresentationMode, RoleType } from '@/types';
+import type { PresentationMode, RoleType, StoryRoleKey } from '@/types';
 import { MiniMap } from '@/components/ui/MiniMap';
 
 // nipplejs (used by TouchControls) touches `window` as a module-level side
@@ -29,20 +28,6 @@ function getRoleLabel(activeRole: RoleType, presentationMode: PresentationMode):
   return 'Guest';
 }
 
-function getCustomerQuestProgress(completedStations: string[], collectedPickupIds: string[]): number {
-  let progress = 0;
-  if (completedStations.includes('CUSTOMER_STORE')) progress += 1;
-  if (collectedPickupIds.length >= CASHBACK_PICKUPS.length) progress += 1;
-  if (completedStations.includes('CUSTOMER_EXPRESS')) progress += 1;
-  return progress;
-}
-
-function getAgentQuestProgress(agentOrderStage: AgentOrderStage): number {
-  if (agentOrderStage === 'DISPATCHED') return 1;
-  if (agentOrderStage === 'VERIFIED') return 2;
-  return 0;
-}
-
 function formatCountdown(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60)
     .toString()
@@ -62,9 +47,7 @@ export function Overlay() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
-  const completedStations = useRoleStore((state) => state.completedStations);
-  const collectedPickupIds = useRoleStore((state) => state.collectedPickupIds);
-  const agentOrderStage = useRoleStore((state) => state.agentOrderStage);
+  const chapterIndex = useRoleStore((state) => (activeRole ? state.chapterIndex[activeRole as StoryRoleKey] : null));
   const customerWallet = useRoleStore((state) => state.customerWallet);
   const driverEarnings = useRoleStore((state) => state.driverEarnings);
   const activeOrderCountdownSeconds = useRoleStore((state) => state.activeOrderCountdownSeconds);
@@ -84,11 +67,6 @@ export function Overlay() {
 
   const isCustomer = activeRole === 'CUSTOMER';
   const isAgent = activeRole === 'AGENT';
-  const questProgress = isCustomer
-    ? getCustomerQuestProgress(completedStations, collectedPickupIds)
-    : isAgent
-      ? getAgentQuestProgress(agentOrderStage)
-      : null;
 
   return (
     <>
@@ -100,10 +78,10 @@ export function Overlay() {
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
             {getRoleLabel(activeRole, presentationMode)}
           </span>
-          {questProgress !== null && (
+          {chapterIndex !== null && (
             <>
               <span className="text-neutral-300">|</span>
-              <span>{questProgress} / 3 quests</span>
+              <span>Chapter {Math.min(chapterIndex + 1, 3)} / 3</span>
             </>
           )}
           <span className="text-neutral-300">|</span>
@@ -111,7 +89,7 @@ export function Overlay() {
             {isAgent ? currencyFormatter.format(driverEarnings) : currencyFormatter.format(customerWallet)}
             {isAgent ? ' earned' : ' wallet'}
           </span>
-          {isCustomer && activeOrderCountdownSeconds !== null && (
+          {(isCustomer || isAgent) && activeOrderCountdownSeconds !== null && (
             <>
               <span className="text-neutral-300">|</span>
               <span className="font-semibold text-green-600">ETA {formatCountdown(activeOrderCountdownSeconds)}</span>

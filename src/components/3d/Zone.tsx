@@ -53,7 +53,6 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
   const completedStations = useRoleStore((state) => state.completedStations);
   const completeStation = useRoleStore((state) => state.completeStation);
   const activateSpeedBoost = useRoleStore((state) => state.activateSpeedBoost);
-  const openLeadModal = useRoleStore((state) => state.openLeadModal);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const nearestZoneId = useRoleStore((state) => state.nearestZoneId);
   const agentOrderStage = useRoleStore((state) => state.agentOrderStage);
@@ -161,9 +160,11 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
         colors: ['#22c55e', '#a855f7', '#7dd3fc'],
       });
       pushFeaturePopup('DELIVERY_GUARANTEE', 'Order placed — arriving in under 2 hours');
-      openLeadModal('customer_express_checkout_complete');
+      // completeStation (triggered just above, via useFrame) already advances
+      // this to Chapter 3 and fires the campaign-complete voucher screen —
+      // no separate lead-modal call needed here.
     }
-  }, [isCompleted, isOneShotStation, zone.id, activateSpeedBoost, openLeadModal, pushFeaturePopup, startExpressOrder]);
+  }, [isCompleted, isOneShotStation, zone.id, activateSpeedBoost, pushFeaturePopup, startExpressOrder]);
 
   const color = getStationColor(zone.id, isCompleted, agentOrderStage);
 

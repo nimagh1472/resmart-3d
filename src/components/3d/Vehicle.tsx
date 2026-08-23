@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useImperativeHandle, useRef } from 'react';
+import { forwardRef, useCallback, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, type RapierRigidBody } from '@react-three/rapier';
 import { ContactShadows } from '@react-three/drei';
@@ -8,18 +8,36 @@ import * as THREE from 'three';
 import { controlsState } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { vehicleTelemetry } from '@/hooks/useVehicleTelemetry';
-import { WORLD_BOUNDS } from '@/lib/pitchData';
+import { DUBAI_LANDMARKS, WORLD_BOUNDS } from '@/lib/pitchData';
+
+const [TOWER_X, , TOWER_Z] = DUBAI_LANDMARKS.CENTRAL_TOWER_POSITION;
+const TOWER_EXCLUSION_RADIUS = DUBAI_LANDMARKS.CENTRAL_TOWER_EXCLUSION_RADIUS;
 
 const MAX_SPEED = 18; // units/sec
 const BOOST_MULTIPLIER = 1.6;
-const TURN_RATE = 2.2; // rad/sec
+const TURN_RATE = 2.2; // rad/sec, at a standstill — see speed-dependent falloff below
+const TURN_RATE_FALLOFF_AT_TOP_SPEED = 0.4; // fraction of TURN_RATE shed at MAX_SPEED (stability at speed)
 const VEHICLE_HALF_WIDTH = 1.5;
+// Caps how far a single frame can move the vehicle, regardless of a lag
+// spike or the tab regaining focus after being backgrounded (both produce an
+// abnormally large useFrame delta). Without this, position integration is
+// purely sampled (not swept), so an oversized single-frame step can tunnel
+// straight through the Central Tower's exclusion radius below instead of
+// being clamped at its edge.
+const MAX_FRAME_DELTA = 1 / 15;
 const SPAWN_HEIGHT = 0.6;
+// The Central Tower now occupies world origin (see World.tsx/pitchData.ts
+// DUBAI_LANDMARKS), so the vehicle spawns on the boulevard just south of it.
+const SPAWN_POSITION: [number, number, number] = [0, SPAWN_HEIGHT, 40];
 
 // Smoothing rates (per second) for the "premium" lerp-driven feel: how
 // quickly current speed/turn converge toward the raw input target, and how
 // quickly the purely-visual body-roll/pitch tilt converges toward its target.
-const SPEED_RESPONSE = 4.5;
+// Braking/lift-off responds noticeably snappier than accelerating ramps up —
+// the asymmetry arcade driving games use to feel responsive under braking
+// without making acceleration feel twitchy.
+const ACCEL_RESPONSE = 3.4;
+const BRAKE_RESPONSE = 8;
 const TURN_RESPONSE = 6;
 const TILT_RESPONSE = 5;
 const MAX_ROLL = 0.22; // radians of bank into a turn
@@ -52,10 +70,24 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const speedBoostMultiplier = useRoleStore((state) => state.speedBoostMultiplier);
 
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
-  useImperativeHandle(ref, () => rigidBodyRef.current as RapierRigidBody);
+  // A plain useImperativeHandle snapshot of rigidBodyRef.current can go
+  // stale here: @react-three/rapier assigns the RapierRigidBody instance to
+  // <RigidBody ref>'s callback on its own timing (physics-world-ready, not
+  // React's commit), and Vehicle has no reason to re-render again afterward
+  // to refresh an imperative-handle snapshot. Merging the forwarded ref into
+  // the SAME callback RigidBody itself calls guarantees CameraRig/Zones see
+  // the instance at the exact moment it actually becomes available.
+  const rigidBodyRef = useRef<RapierRigidBody | null>(null);
+  const setRigidBodyRef = useCallback(
+    (instance: RapierRigidBody | null) => {
+      rigidBodyRef.current = instance;
+      if (typeof ref === 'function') ref(instance);
+      else if (ref) ref.current = instance;
+    },
+    [ref],
+  );
 
-  const position = useRef(new THREE.Vector3(0, SPAWN_HEIGHT, 0));
+  const position = useRef(new THREE.Vector3(...SPAWN_POSITION));
   const rotationY = useRef(0);
   const quaternion = useRef(new THREE.Quaternion());
   const upAxis = useRef(new THREE.Vector3(0, 1, 0));
@@ -71,9 +103,11 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const currentPitch = useRef(0);
   const tiltGroupRef = useRef<THREE.Group>(null);
 
-  useFrame((_, delta) => {
+  useFrame((_, rawDelta) => {
     const rigidBody = rigidBodyRef.current;
     if (!rigidBody) return;
+
+    const delta = Math.min(rawDelta, MAX_FRAME_DELTA);
 
     const inputEnabled = presentationMode !== 'CINEMATIC';
     const forwardInput = inputEnabled ? controlsState.forward : 0;
@@ -81,16 +115,40 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     const boost = inputEnabled && controlsState.boost;
 
     const targetSpeed = forwardInput * MAX_SPEED * speedBoostMultiplier * (boost ? BOOST_MULTIPLIER : 1);
-    const targetTurnRate = turnInput * TURN_RATE * (forwardInput < 0 ? -1 : 1);
+
+    // Braking curve: easing off/reversing converges toward the (lower)
+    // target speed noticeably faster than accelerating ramps up toward it.
+    const isBraking = Math.abs(targetSpeed) < Math.abs(currentSpeed.current) - 0.01;
+    const speedResponse = isBraking ? BRAKE_RESPONSE : ACCEL_RESPONSE;
+
+    // Speed-dependent steering: tight and agile at low speed, progressively
+    // more stable (less twitchy) as the car approaches top speed.
+    const speedFactor = THREE.MathUtils.clamp(Math.abs(currentSpeed.current) / (MAX_SPEED * BOOST_MULTIPLIER), 0, 1);
+    const effectiveTurnRate = TURN_RATE * (1 - speedFactor * TURN_RATE_FALLOFF_AT_TOP_SPEED);
+    const targetTurnRate = turnInput * effectiveTurnRate * (forwardInput < 0 ? -1 : 1);
 
     previousSpeed.current = currentSpeed.current;
-    currentSpeed.current = damp(currentSpeed.current, targetSpeed, SPEED_RESPONSE, delta);
+    currentSpeed.current = damp(currentSpeed.current, targetSpeed, speedResponse, delta);
     currentTurnRate.current = damp(currentTurnRate.current, targetTurnRate, TURN_RESPONSE, delta);
 
     rotationY.current += currentTurnRate.current * delta;
 
-    const nextX = position.current.x + Math.sin(rotationY.current) * currentSpeed.current * delta;
-    const nextZ = position.current.z + Math.cos(rotationY.current) * currentSpeed.current * delta;
+    let nextX = position.current.x + Math.sin(rotationY.current) * currentSpeed.current * delta;
+    let nextZ = position.current.z + Math.cos(rotationY.current) * currentSpeed.current * delta;
+
+    // The vehicle is a fully scripted kinematic body — Rapier never adjusts
+    // its position for us, so the Central Tower "collider" in World.tsx is
+    // purely visual. This manual radial push-out (matching the WORLD_BOUNDS
+    // clamp just below) is what actually stops the car from driving through
+    // the tower at the middle of the boulevard roundabout.
+    const towerDx = nextX - TOWER_X;
+    const towerDz = nextZ - TOWER_Z;
+    const towerDistSq = towerDx * towerDx + towerDz * towerDz;
+    if (towerDistSq < TOWER_EXCLUSION_RADIUS * TOWER_EXCLUSION_RADIUS) {
+      const towerDist = Math.sqrt(towerDistSq) || 1;
+      nextX = TOWER_X + (towerDx / towerDist) * TOWER_EXCLUSION_RADIUS;
+      nextZ = TOWER_Z + (towerDz / towerDist) * TOWER_EXCLUSION_RADIUS;
+    }
 
     position.current.x = Math.min(
       WORLD_BOUNDS.maxX - VEHICLE_HALF_WIDTH,
@@ -128,7 +186,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const isAgent = activeRole === 'AGENT';
 
   return (
-    <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders={false} position={[0, SPAWN_HEIGHT, 0]}>
+    <RigidBody ref={setRigidBodyRef} type="kinematicPosition" colliders={false} position={SPAWN_POSITION}>
       <CuboidCollider args={[1.1, 0.6, 1.9]} />
       <group ref={tiltGroupRef}>
         {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}

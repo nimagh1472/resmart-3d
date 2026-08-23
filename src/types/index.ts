@@ -51,6 +51,20 @@ export interface BusinessFeature {
 
 export type AgentOrderStage = 'IDLE' | 'DISPATCHED' | 'VERIFIED';
 
+export type StoryRoleKey = 'CUSTOMER' | 'AGENT';
+
+export interface StoryChapterDef {
+  title: string;
+  guideDialogue: string;
+  objective: string;
+}
+
+export interface VoucherReward {
+  voucherCount: number;
+  voucherValue: number;
+  code: string | null;
+}
+
 export interface FeaturePopup {
   id: number;
   kind: 'FEATURE' | 'REWARD';
