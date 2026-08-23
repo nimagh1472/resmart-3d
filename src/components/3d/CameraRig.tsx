@@ -14,8 +14,15 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 6, -10);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 6, 12);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
+const LOOK_AT_OFFSET = new THREE.Vector3(0, 1.5, 0);
+
+// Overview shown before a vehicle exists or a role has been picked, so the
+// camera never defaults to an unframed/undefined view (e.g. pointing at the
+// sky) while the player is still on the role-select screen.
+const OVERVIEW_POSITION = new THREE.Vector3(0, 15, 30);
+const OVERVIEW_LOOK_TARGET = new THREE.Vector3(0, 0, 0);
 
 const TOUR_ORBIT_RADIUS = 18;
 const TOUR_ORBIT_HEIGHT = 12;
@@ -56,6 +63,7 @@ const ROTATION_SMOOTHING: Record<PresentationMode, number> = {
 export function CameraRig({ vehicleRef }: CameraRigProps) {
   const { camera } = useThree();
   const presentationMode = useRoleStore((state) => state.presentationMode);
+  const activeRole = useRoleStore((state) => state.activeRole);
   const cinematicZoneIndex = useRoleStore((state) => state.cinematicZoneIndex);
   const setCinematicZoneIndex = useRoleStore((state) => state.setCinematicZoneIndex);
   const nearestZoneId = useRoleStore((state) => state.nearestZoneId);
@@ -64,7 +72,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
   const dwellElapsed = useRef(0);
   const orbitAngle = useRef(0);
 
-  const desiredPosition = useRef(new THREE.Vector3(0, 12, -20));
+  const desiredPosition = useRef(new THREE.Vector3(0, 15, 30));
   const lookTarget = useRef(new THREE.Vector3());
   const lookHelper = useRef(new THREE.Object3D());
   const vehiclePosition = useRef(new THREE.Vector3());
@@ -88,7 +96,13 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       vehicleQuaternion.current.set(rotation.x, rotation.y, rotation.z, rotation.w);
     }
 
-    if (presentationMode === 'CINEMATIC' || !vehicle) {
+    if (!vehicle || activeRole === null) {
+      // No vehicle mounted yet, or the player hasn't picked a role (still on
+      // the role-select screen) — hold a nicely framed overview of the city
+      // instead of chasing an undefined/not-yet-driving vehicle.
+      desiredPosition.current.copy(OVERVIEW_POSITION);
+      lookTarget.current.copy(OVERVIEW_LOOK_TARGET);
+    } else if (presentationMode === 'CINEMATIC') {
       dwellElapsed.current += delta;
       orbitAngle.current += delta * TOUR_ORBIT_ANGULAR_SPEED;
 
@@ -110,7 +124,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       const offsetPreset = presentationMode === 'GUIDED' ? GUIDED_OFFSET : INTERACTIVE_OFFSET;
       const offset = offsetPreset.clone().applyQuaternion(vehicleQuaternion.current);
       desiredPosition.current.copy(vehiclePosition.current).add(offset);
-      lookTarget.current.copy(vehiclePosition.current);
+      lookTarget.current.copy(vehiclePosition.current).add(LOOK_AT_OFFSET);
 
       // GUIDED: auto-navigate the look target toward the nearest incomplete
       // pitch station's "optimal angle" as the vehicle approaches it, without
