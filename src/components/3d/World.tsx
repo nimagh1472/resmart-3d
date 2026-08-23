@@ -141,7 +141,9 @@ const TOWER_SEGMENTS: TowerSegmentConfig[] = [
 ];
 // Segment heights sum to 28; spire adds 12 more, so the tip lands at Y = 40.
 const TOWER_SPIRE_HEIGHT = 12;
-const TOWER_TOTAL_HEIGHT = TOWER_SEGMENTS.reduce((sum, segment) => sum + segment.height, 0) + TOWER_SPIRE_HEIGHT;
+// Exported so components/games/InvestorSimulationScene.tsx can place its
+// holographic ROI chart precisely above the tower's apex.
+export const TOWER_TOTAL_HEIGHT = TOWER_SEGMENTS.reduce((sum, segment) => sum + segment.height, 0) + TOWER_SPIRE_HEIGHT;
 const TOWER_NEON_COLORS = ['#FFD166', '#4ECDC4'];
 
 const PALM_TREE_RING_COUNT = 16;

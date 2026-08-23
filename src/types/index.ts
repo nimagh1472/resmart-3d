@@ -96,3 +96,23 @@ export interface WalletTransaction {
   amount: number;
   timestamp: number;
 }
+
+/** Leaderboard/onboarding persona — distinct from RoleType (which only
+ * distinguishes CUSTOMER/AGENT gameplay), since Investor has no gameplay
+ * role of its own (it's a presentationMode, CINEMATIC) but still needs a
+ * leaderboard bucket. */
+export type ProfileRole = 'driver' | 'customer' | 'investor';
+
+export interface UserProfile {
+  email: string;
+  role: ProfileRole;
+  score: number;
+  rank: number;
+}
+
+export interface LeaderboardEntry {
+  email: string;
+  role: ProfileRole;
+  score: number;
+  updatedAt: string;
+}

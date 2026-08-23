@@ -3,7 +3,13 @@
 import { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { useRoleStore } from '@/hooks/useRoleStore';
+import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { CINEMATIC_DWELL_SECONDS, STATIONS } from '@/lib/pitchData';
+
+// Investor leaderboard score awarded for completing one full lap of the
+// cinematic tour — investors have no AED earnings loop of their own, so this
+// is the stand-in engagement score for their leaderboard bucket.
+const SCORE_INVESTOR_TOUR_LAP = 500;
 
 /**
  * Letterbox bars, per-zone progress segments (Instagram-story style — the
@@ -26,15 +32,21 @@ export function CinematicBar() {
 
   const previousZoneIndex = useRef(cinematicZoneIndex);
   const hasCompletedTour = useRef(false);
+  const addScore = useUserProfileStore((state) => state.addScore);
 
   useEffect(() => {
     const justWrapped = previousZoneIndex.current === STATIONS.length - 1 && cinematicZoneIndex === 0;
-    if (justWrapped && !hasCompletedTour.current) {
-      hasCompletedTour.current = true;
-      openLeadModal('cinematic_complete');
+    if (justWrapped) {
+      // Score awarded every lap (replay-friendly); the lead modal itself
+      // still only opens once per session, tracked separately below.
+      addScore(SCORE_INVESTOR_TOUR_LAP);
+      if (!hasCompletedTour.current) {
+        hasCompletedTour.current = true;
+        openLeadModal('cinematic_complete');
+      }
     }
     previousZoneIndex.current = cinematicZoneIndex;
-  }, [cinematicZoneIndex, openLeadModal]);
+  }, [cinematicZoneIndex, openLeadModal, addScore]);
 
   if (presentationMode !== 'CINEMATIC') return null;
 

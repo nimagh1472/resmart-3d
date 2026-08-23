@@ -16,9 +16,9 @@ function detectLowEndGpu(): boolean {
 const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
 
 const SKY_COLOR = '#D8EEF8';
-const FOG_COLOR = '#D8EEF8';
-const FOG_NEAR = 50;
-const FOG_FAR = 250;
+const FOG_COLOR = '#D5E5ED';
+const FOG_NEAR = 60;
+const FOG_FAR = 300;
 
 const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
 const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
@@ -113,7 +113,7 @@ export function Environment({ isMobile }: EnvironmentProps) {
                 worldProximityFalloff={0.5}
               />
             ),
-            <Bloom key="bloom" luminanceThreshold={0.7} luminanceSmoothing={0.9} intensity={0.3} mipmapBlur />,
+            <Bloom key="bloom" luminanceThreshold={0.65} luminanceSmoothing={0.9} intensity={0.4} mipmapBlur />,
             <Vignette key="vignette" darkness={0.6} />,
           ].filter((effect): effect is JSX.Element => Boolean(effect));
 

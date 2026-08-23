@@ -11,6 +11,7 @@ import { Zones } from '@/components/3d/Zones';
 import { Vehicle } from '@/components/3d/Vehicle';
 import { CameraRig } from '@/components/3d/CameraRig';
 import { TrafficObstacles } from '@/components/3d/TrafficObstacles';
+import { InvestorSimulationScene } from '@/components/games/InvestorSimulationScene';
 import { useKeyboardControls } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
 
@@ -72,7 +73,7 @@ export function Experience() {
     <Canvas
       key={canvasKey}
       shadows={isMobile ? false : 'soft'}
-      camera={{ position: [20, 18, 20], fov: 45, near: 0.5, far: 600 }}
+      camera={{ position: [20, 18, 20], fov: 42, near: 0.5, far: 800 }}
       dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)}
       gl={{
         toneMapping: ACESFilmicToneMapping,
@@ -93,6 +94,7 @@ export function Experience() {
           <Zones vehicleRef={vehicleRef} />
           <Vehicle ref={vehicleRef} isMobile={isMobile} />
           <CameraRig vehicleRef={vehicleRef} />
+          <InvestorSimulationScene />
         </Physics>
       </Suspense>
     </Canvas>

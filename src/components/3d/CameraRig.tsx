@@ -15,7 +15,7 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 12, 28);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 16, 32);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
 // Ahead-and-up of the vehicle (rather than dead-on) so the look target sits
 // between the car and the skyline, keeping full building height in frame.
@@ -52,7 +52,7 @@ const GUIDED_REVEAL_STRENGTH = 0.6;
 // damp — replaces the old raw per-frame lerp factors (which were implicitly
 // tuned for ~60fps and would drift at other frame rates).
 const POSITION_RESPONSE: Record<PresentationMode, number> = {
-  INTERACTIVE: 6,
+  INTERACTIVE: 8,
   GUIDED: 2.5,
   CINEMATIC: 1.8,
 };
@@ -64,7 +64,7 @@ const ROTATION_RESPONSE: Record<PresentationMode, number> = {
 
 // Nitro boost FOV kick: widening the lens while boosting reads as speed
 // without touching the chase-cam offsets above.
-const BASE_FOV = 45;
+const BASE_FOV = 42;
 const BOOST_FOV = 58;
 const FOV_RESPONSE = 4;
 

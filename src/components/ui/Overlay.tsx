@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
-import { Car, Clapperboard, FileText, Sparkles, Volume2, VolumeX } from 'lucide-react';
+import { Car, Clapperboard, FileText, Sparkles, Trophy, Volume2, VolumeX } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
+import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
 import type { PresentationMode, RoleType, StoryRoleKey } from '@/types';
 import { MiniMap } from '@/components/ui/MiniMap';
@@ -53,6 +54,7 @@ export function Overlay() {
   const driverEarnings = useRoleStore((state) => state.driverEarnings);
   const activeOrderCountdownSeconds = useRoleStore((state) => state.activeOrderCountdownSeconds);
   const tickOrderCountdown = useRoleStore((state) => state.tickOrderCountdown);
+  const openLeaderboard = useUserProfileStore((state) => state.openLeaderboard);
   const { isAudioEnabled, unlock, mute } = useSound();
 
   useEffect(() => {
@@ -136,6 +138,13 @@ export function Overlay() {
             className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
           >
             <FileText size={14} />
+          </button>
+          <button
+            onClick={openLeaderboard}
+            aria-label="Open Top 50 leaderboard"
+            className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
+          >
+            <Trophy size={14} />
           </button>
         </div>
       </div>

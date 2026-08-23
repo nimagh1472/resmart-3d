@@ -308,7 +308,7 @@ function MerchantTestBench() {
 
   return (
     <group position={[0, 0, -4]}>
-      <mesh position={[0, 0.4, 0]} castShadow>
+      <mesh position={[0, 0.4, 0]} castShadow={false}>
         <boxGeometry args={[3, 0.8, 1.4]} />
         <meshStandardMaterial color="#1e293b" />
       </mesh>
@@ -351,7 +351,7 @@ function DispatchKiosk() {
 
   return (
     <group position={[0, 0, -4]}>
-      <mesh position={[0, 1, 0]} castShadow>
+      <mesh position={[0, 1, 0]} castShadow={false}>
         <boxGeometry args={[1.2, 2, 0.6]} />
         <meshStandardMaterial color="#1e293b" />
       </mesh>
@@ -371,7 +371,7 @@ function DispatchKiosk() {
 function SpeedRamp() {
   return (
     <group position={[0, 0, -6]}>
-      <mesh position={[0, 1, 4]} rotation={[Math.PI / 10, 0, 0]} castShadow>
+      <mesh position={[0, 1, 4]} rotation={[Math.PI / 10, 0, 0]} castShadow={false}>
         <boxGeometry args={[4, 0.4, 8]} />
         <meshStandardMaterial color="#14532d" />
       </mesh>
@@ -384,7 +384,7 @@ function SpeedRamp() {
 function ExpressDeliveryRamp() {
   return (
     <group position={[0, 0, -6]}>
-      <mesh position={[0, 1, 4]} rotation={[Math.PI / 10, 0, 0]} castShadow>
+      <mesh position={[0, 1, 4]} rotation={[Math.PI / 10, 0, 0]} castShadow={false}>
         <boxGeometry args={[4, 0.4, 8]} />
         <meshStandardMaterial color="#312e81" />
       </mesh>
@@ -436,7 +436,7 @@ function TractionBillboards({ metricKeys }: { metricKeys: string[] }) {
 
         return (
           <group key={key} position={[startX + index * spacing, 3, 0]}>
-            <mesh castShadow>
+            <mesh castShadow={false}>
               <boxGeometry args={[3.4, 2.6, 0.2]} />
               <meshStandardMaterial color="#0f172a" />
             </mesh>

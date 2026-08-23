@@ -108,7 +108,7 @@ function TrafficCone({ position }: { position: [number, number, number] }) {
       mass={1}
       userData={OBSTACLE_USER_DATA}
     >
-      <mesh castShadow>
+      <mesh castShadow={false}>
         <coneGeometry args={[0.35, 0.9, 12]} />
         <meshStandardMaterial color="#FF7A45" roughness={0.6} />
       </mesh>
@@ -134,7 +134,7 @@ function WoodenCrate({ position }: { position: [number, number, number] }) {
       mass={1}
       userData={OBSTACLE_USER_DATA}
     >
-      <mesh castShadow>
+      <mesh castShadow={false}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#B98255" roughness={0.9} />
       </mesh>
@@ -168,11 +168,11 @@ function KnockableBillboard({ position, rotationY, label, color }: BillboardObst
       mass={1}
       userData={OBSTACLE_USER_DATA}
     >
-      <mesh castShadow position={[0, 2.6, 0]}>
+      <mesh castShadow={false} position={[0, 2.6, 0]}>
         <boxGeometry args={[0.22, 5.2, 0.22]} />
         <meshStandardMaterial color="#334155" />
       </mesh>
-      <mesh castShadow position={[0, 5.4, 0]}>
+      <mesh castShadow={false} position={[0, 5.4, 0]}>
         <boxGeometry args={[3.2, 1.7, 0.15]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.8} toneMapped={false} />
       </mesh>
@@ -200,7 +200,7 @@ function StuntRamp({ position, rotationY, length, width, rampHeight }: RampConfi
       <mesh
         position={[0, (rampHeight / 2) * 0.55, length / 2]}
         rotation={[-incline, 0, 0]}
-        castShadow
+        castShadow={false}
         receiveShadow
       >
         <boxGeometry args={[width, 0.5, slopeLength]} />

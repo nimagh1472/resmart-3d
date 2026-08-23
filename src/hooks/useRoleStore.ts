@@ -7,6 +7,7 @@ import {
   calculateVoucherReward,
   randomInRange,
 } from '@/lib/pitchData';
+import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import type {
   AgentOrderStage,
   BusinessFeatureKey,
@@ -25,6 +26,16 @@ const FEATURE_POPUP_LIFETIME_MS = 4200;
 const REWARD_POPUP_LIFETIME_MS = 2200;
 const CHAPTERS_PER_CAMPAIGN = 3;
 const TRANSACTION_HISTORY_LIMIT = 12;
+
+// Leaderboard score awards — independent of the AED earnings/wallet figures
+// above (those price the fictional business; these rank engagement). See
+// useUserProfileStore.addScore / lib/leaderboard.ts.
+const SCORE_STATION_CLEARED = 50;
+const SCORE_CASHBACK_COLLECTED = 15;
+const SCORE_VERIFICATION_COMPLETED = 25;
+const SCORE_DROPOFF_COMPLETED = 40;
+const SCORE_CAMPAIGN_COMPLETED = 200;
+const SCORE_EASTER_EGG_FOUND = 100;
 
 let nextPopupId = 1;
 let nextTransactionId = 1;
@@ -147,6 +158,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       earnings: state.earnings + FINANCIAL_METRICS.netMarginPerOrder.value,
     }));
     get().pushTransaction(`Station cleared: ${id.replace(/_/g, ' ')}`, FINANCIAL_METRICS.netMarginPerOrder.value);
+    useUserProfileStore.getState().addScore(SCORE_STATION_CLEARED);
 
     if (id === 'CUSTOMER_STORE') get().advanceChapter('CUSTOMER', 1);
     if (id === 'CUSTOMER_EXPRESS') {
@@ -186,6 +198,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     if (get().hasFoundEasterEgg) return;
     set({ hasFoundEasterEgg: true });
     get().pushFeaturePopup('SECRET_VOUCHER');
+    useUserProfileStore.getState().addScore(SCORE_EASTER_EGG_FOUND);
   },
 
   collectCashback: (id, amount) => {
@@ -196,6 +209,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       customerWallet: state.customerWallet + amount,
     }));
     get().pushTransaction('Cashback Gem collected', amount);
+    useUserProfileStore.getState().addScore(SCORE_CASHBACK_COLLECTED);
     if (isFirstEver) {
       get().pushFeaturePopup('CASHBACK_REWARDS');
     } else {
@@ -228,6 +242,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     set((state) => ({ agentOrderStage: 'VERIFIED', driverEarnings: state.driverEarnings + fee }));
     get().pushTransaction('Merchant test fee', fee);
     get().advanceChapter('AGENT', 2);
+    useUserProfileStore.getState().addScore(SCORE_VERIFICATION_COMPLETED);
     return fee;
   },
 
@@ -237,6 +252,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     get().pushTransaction('Delivery bonus', DROPOFF_BONUS);
     get().advanceChapter('AGENT', 3);
     get().completeCampaign('AGENT');
+    useUserProfileStore.getState().addScore(SCORE_DROPOFF_COMPLETED);
     return DROPOFF_BONUS;
   },
 
@@ -253,6 +269,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     const walletTotal = role === 'CUSTOMER' ? get().customerWallet : get().driverEarnings;
     const totalEarnings = walletTotal + CAMPAIGN_COMPLETION_BONUS[role];
     const reward = calculateVoucherReward(totalEarnings);
+    useUserProfileStore.getState().addScore(SCORE_CAMPAIGN_COMPLETED);
 
     set((state) => ({
       hasCampaignCompleted: { ...state.hasCampaignCompleted, [role]: true },
