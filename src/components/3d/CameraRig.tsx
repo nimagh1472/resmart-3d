@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
+import { controlsState } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { CINEMATIC_DWELL_SECONDS, STATIONS } from '@/lib/pitchData';
 import type { PresentationMode } from '@/types';
@@ -58,6 +59,12 @@ const ROTATION_RESPONSE: Record<PresentationMode, number> = {
   GUIDED: 3.5,
   CINEMATIC: 2.5,
 };
+
+// Nitro boost FOV kick: widening the lens while boosting reads as speed
+// without touching the chase-cam offsets above.
+const BASE_FOV = 35;
+const BOOST_FOV = 48;
+const FOV_RESPONSE = 4;
 
 /**
  * Drives the camera per presentation mode, using only native R3F/three.js
@@ -168,6 +175,13 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
     lookMatrix.current.lookAt(camera.position, lookTarget.current, camera.up);
     desiredQuaternion.current.setFromRotationMatrix(lookMatrix.current);
     camera.quaternion.slerp(desiredQuaternion.current, dampFactor(ROTATION_RESPONSE[presentationMode], delta));
+
+    if (camera instanceof THREE.PerspectiveCamera) {
+      const isBoosting = Boolean(vehicle) && presentationMode !== 'CINEMATIC' && controlsState.boost;
+      const targetFov = isBoosting ? BOOST_FOV : BASE_FOV;
+      camera.fov = THREE.MathUtils.damp(camera.fov, targetFov, FOV_RESPONSE, delta);
+      camera.updateProjectionMatrix();
+    }
   });
 
   return null;

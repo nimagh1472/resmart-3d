@@ -82,7 +82,7 @@ export function Experience() {
           <Environment isMobile={isMobile} />
           <Ground />
           <World />
-          <TrafficObstacles />
+          <TrafficObstacles vehicleRef={vehicleRef} />
           <Zones vehicleRef={vehicleRef} />
           <Vehicle ref={vehicleRef} isMobile={isMobile} />
           <CameraRig vehicleRef={vehicleRef} />

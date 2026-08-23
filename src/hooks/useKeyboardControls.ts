@@ -17,7 +17,7 @@ const FORWARD_KEYS = new Set(['ArrowUp', 'KeyW']);
 const BACKWARD_KEYS = new Set(['ArrowDown', 'KeyS']);
 const LEFT_KEYS = new Set(['ArrowLeft', 'KeyA']);
 const RIGHT_KEYS = new Set(['ArrowRight', 'KeyD']);
-const BOOST_KEYS = new Set(['ShiftLeft', 'ShiftRight']);
+const BOOST_KEYS = new Set(['ShiftLeft', 'ShiftRight', 'Space']);
 
 function applyKey(code: string, isDown: boolean) {
   if (FORWARD_KEYS.has(code)) controlsState.forward = isDown ? 1 : Math.min(controlsState.forward, 0);
@@ -33,7 +33,12 @@ function applyKey(code: string, isDown: boolean) {
  */
 export function useKeyboardControls() {
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => applyKey(event.code, true);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Space is a boost key here — without this, the browser's default
+      // "scroll the page" behavior fires on every boost press.
+      if (event.code === 'Space') event.preventDefault();
+      applyKey(event.code, true);
+    };
     const handleKeyUp = (event: KeyboardEvent) => applyKey(event.code, false);
 
     window.addEventListener('keydown', handleKeyDown);

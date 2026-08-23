@@ -41,7 +41,12 @@ export interface CashbackPickup {
   amount: number;
 }
 
-export type BusinessFeatureKey = 'AI_COMPARISON' | 'CASHBACK_REWARDS' | 'DELIVERY_GUARANTEE' | 'AGENT_EARNINGS';
+export type BusinessFeatureKey =
+  | 'AI_COMPARISON'
+  | 'CASHBACK_REWARDS'
+  | 'DELIVERY_GUARANTEE'
+  | 'AGENT_EARNINGS'
+  | 'SECRET_VOUCHER';
 
 export interface BusinessFeature {
   key: BusinessFeatureKey;

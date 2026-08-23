@@ -5,6 +5,7 @@ import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { useRoleStore } from '@/hooks/useRoleStore';
+import { useSound } from '@/hooks/useSound';
 import { FacingText } from '@/components/3d/FacingText';
 import type { CashbackPickup as CashbackPickupData } from '@/types';
 
@@ -25,6 +26,7 @@ export function CashbackPickup({ pickup, vehicleRef }: CashbackPickupProps) {
   const spinRef = useRef<Group>(null);
   const isCollected = useRoleStore((state) => state.collectedPickupIds.includes(pickup.id));
   const collectCashback = useRoleStore((state) => state.collectCashback);
+  const { playChime } = useSound();
 
   useFrame((state, delta) => {
     if (spinRef.current) {
@@ -41,6 +43,7 @@ export function CashbackPickup({ pickup, vehicleRef }: CashbackPickupProps) {
     const dz = vehiclePosition.z - pickup.position[2];
     if (Math.sqrt(dx * dx + dz * dz) <= TRIGGER_RADIUS) {
       collectCashback(pickup.id, pickup.amount);
+      playChime();
     }
   });
 

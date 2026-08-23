@@ -1,20 +1,22 @@
 'use client';
 
-import { forwardRef, useCallback, useMemo, useRef } from 'react';
+import { forwardRef, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, CuboidCollider, type RapierRigidBody } from '@react-three/rapier';
+import { RigidBody, CuboidCollider, type RapierRigidBody, type CollisionEnterPayload } from '@react-three/rapier';
 import { ContactShadows } from '@react-three/drei';
 import * as THREE from 'three';
 import { controlsState } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
+import { useSound } from '@/hooks/useSound';
 import { vehicleTelemetry } from '@/hooks/useVehicleTelemetry';
 import { DUBAI_LANDMARKS, WORLD_BOUNDS } from '@/lib/pitchData';
+import { RAMP_CONFIGS } from '@/components/3d/TrafficObstacles';
 
 const [TOWER_X, , TOWER_Z] = DUBAI_LANDMARKS.CENTRAL_TOWER_POSITION;
 const TOWER_EXCLUSION_RADIUS = DUBAI_LANDMARKS.CENTRAL_TOWER_EXCLUSION_RADIUS;
 
 const MAX_SPEED = 18; // units/sec
-const BOOST_MULTIPLIER = 1.6;
+const BOOST_MULTIPLIER = 1.8;
 const TURN_RATE = 2.2; // rad/sec, at a standstill — see speed-dependent falloff below
 const TURN_RATE_FALLOFF_AT_TOP_SPEED = 0.4; // fraction of TURN_RATE shed at MAX_SPEED (stability at speed)
 const VEHICLE_HALF_WIDTH = 1.5;
@@ -49,6 +51,26 @@ const DRIFT_SPEED_THRESHOLD = 0.35; // fraction of top speed
 const DRIFT_RESPONSE = 6;
 const DUST_PARTICLE_COUNT = 24;
 
+// Nitro boost cyan wheel-trail intensity response, and the min cooldown
+// between "crash" impact sounds so scraping an obstacle for several frames
+// doesn't machine-gun the crash noise.
+const BOOST_TRAIL_RESPONSE = 8;
+const CRASH_SOUND_COOLDOWN_MS = 200;
+
+// The vehicle is a fully scripted kinematic body — Rapier never integrates
+// gravity/impulses for it, so the stunt-ramp mid-air arc below is entirely
+// manual: detect the vehicle entering a ramp's footprint (see RAMP_CONFIGS,
+// defined in TrafficObstacles.tsx alongside the ramp's visual geometry) while
+// moving fast enough and roughly aligned with its climb direction, then
+// integrate a simple vertical launch velocity against gravity every frame
+// until it lands back at SPAWN_HEIGHT.
+const GRAVITY = 30; // units/sec^2
+const RAMP_LAUNCH_ZONE_FRACTION = 0.6; // fraction of ramp length where launch triggers
+const RAMP_LAUNCH_MIN_SPEED = 4; // units/sec
+const RAMP_LAUNCH_BASE_SPEED = 9; // units/sec, vertical velocity at launch
+const RAMP_LAUNCH_SPEED_GAIN = 11; // extra vertical velocity at full speed
+const LANDING_SQUASH_RESPONSE = 10;
+
 // THREE.MathUtils.damp: the built-in framerate-independent exponential
 // approach of `current` toward `target` at rate `response`, over `delta`
 // seconds — used for every smoothed value below instead of a raw per-frame
@@ -76,6 +98,8 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const activeRole = useRoleStore((state) => state.activeRole);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const speedBoostMultiplier = useRoleStore((state) => state.speedBoostMultiplier);
+  const isAudioEnabled = useRoleStore((state) => state.isAudioEnabled);
+  const { startEngine, stopEngine, updateEnginePitch, playCrash } = useSound();
 
   // A plain useImperativeHandle snapshot of rigidBodyRef.current can go
   // stale here: @react-three/rapier assigns the RapierRigidBody instance to
@@ -110,6 +134,36 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const currentPitch = useRef(0);
   const tiltGroupRef = useRef<THREE.Group>(null);
   const driftIntensity = useRef(0);
+  const boostIntensity = useRef(0);
+
+  // Manual mid-air arc state for stunt-ramp jumps (see RAMP_LAUNCH_* above) —
+  // verticalVelocity/isAirborne drive position.current.y directly since the
+  // vehicle's kinematic RigidBody never gets this from Rapier itself.
+  const verticalVelocity = useRef(0);
+  const isAirborne = useRef(false);
+  const landingSquash = useRef(0);
+
+  const crashCooldownRef = useRef(false);
+
+  useEffect(() => {
+    if (isAudioEnabled) startEngine();
+    else stopEngine();
+  }, [isAudioEnabled, startEngine, stopEngine]);
+
+  useEffect(() => stopEngine, [stopEngine]);
+
+  const handleCollisionEnter = useCallback(
+    (payload: CollisionEnterPayload) => {
+      if (!payload.other.rigidBodyObject?.userData?.obstacle) return;
+      if (crashCooldownRef.current) return;
+      crashCooldownRef.current = true;
+      playCrash();
+      setTimeout(() => {
+        crashCooldownRef.current = false;
+      }, CRASH_SOUND_COOLDOWN_MS);
+    },
+    [playCrash],
+  );
 
   useFrame((_, rawDelta) => {
     const rigidBody = rigidBodyRef.current;
@@ -168,6 +222,52 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
       Math.max(WORLD_BOUNDS.minZ + VEHICLE_HALF_WIDTH, nextZ),
     );
 
+    // Stunt-ramp launch detection: transform the vehicle's next XZ position
+    // into each ramp's local space (inverse of the same sin/cos Y-rotation
+    // used for the vehicle's own heading) and check whether it's within the
+    // ramp's footprint, moving fast enough, and roughly aligned with its
+    // climb direction. Triggering sets a manual vertical launch velocity;
+    // isAirborne itself debounces re-triggering until the vehicle lands.
+    if (!isAirborne.current) {
+      for (const ramp of RAMP_CONFIGS) {
+        const dx = position.current.x - ramp.position[0];
+        const dz = position.current.z - ramp.position[2];
+        const cosR = Math.cos(ramp.rotationY);
+        const sinR = Math.sin(ramp.rotationY);
+        const localX = dx * cosR - dz * sinR;
+        const localZ = dx * sinR + dz * cosR;
+        const headingAligned = Math.cos(rotationY.current - ramp.rotationY) > 0.5;
+        const speedAbs = Math.abs(currentSpeed.current);
+
+        if (
+          headingAligned &&
+          speedAbs > RAMP_LAUNCH_MIN_SPEED &&
+          localZ >= ramp.length * RAMP_LAUNCH_ZONE_FRACTION &&
+          localZ <= ramp.length + 1.5 &&
+          Math.abs(localX) <= ramp.width / 2
+        ) {
+          verticalVelocity.current = RAMP_LAUNCH_BASE_SPEED + speedFactor * RAMP_LAUNCH_SPEED_GAIN;
+          isAirborne.current = true;
+          break;
+        }
+      }
+    }
+
+    // Manual mid-air arc: since the kinematic RigidBody never receives
+    // gravity from Rapier, integrate it by hand and land softly back at
+    // SPAWN_HEIGHT (triggering a brief squash via landingSquash below).
+    if (isAirborne.current) {
+      verticalVelocity.current -= GRAVITY * delta;
+      position.current.y += verticalVelocity.current * delta;
+      if (position.current.y <= SPAWN_HEIGHT) {
+        position.current.y = SPAWN_HEIGHT;
+        verticalVelocity.current = 0;
+        isAirborne.current = false;
+        landingSquash.current = 1;
+      }
+    }
+    landingSquash.current = damp(landingSquash.current, 0, LANDING_SQUASH_RESPONSE, delta);
+
     quaternion.current.setFromAxisAngle(upAxis.current, rotationY.current);
 
     rigidBody.setNextKinematicTranslation(position.current);
@@ -189,6 +289,9 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     if (tiltGroupRef.current) {
       tiltGroupRef.current.rotation.z = currentRoll.current;
       tiltGroupRef.current.rotation.x = currentPitch.current;
+      // Soft-landing squash/stretch: briefly flattens and widens the body on
+      // touchdown, then eases back to normal as landingSquash decays to 0.
+      tiltGroupRef.current.scale.set(1 + landingSquash.current * 0.1, 1 - landingSquash.current * 0.18, 1 + landingSquash.current * 0.1);
     }
 
     // Drift dust: a fast steering change only reads as a "drift" once the
@@ -196,16 +299,33 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     // hard the (speed-falloff-adjusted) turn rate is currently being pushed.
     const targetDrift = speedFactor > DRIFT_SPEED_THRESHOLD ? THREE.MathUtils.clamp(turnMagnitude, 0, 1) : 0;
     driftIntensity.current = damp(driftIntensity.current, targetDrift, DRIFT_RESPONSE, delta);
+
+    // Nitro boost cyan wheel trail: only reads as "boosting" once the car is
+    // actually being driven forward/back under boost, not merely holding the
+    // key at a standstill.
+    const targetBoostTrail = boost && forwardInput !== 0 ? 1 : 0;
+    boostIntensity.current = damp(boostIntensity.current, targetBoostTrail, BOOST_TRAIL_RESPONSE, delta);
+
+    // Procedural engine pitch: continuously retunes the persistent engine
+    // drone's frequency/growl/volume from the car's current speed fraction.
+    updateEnginePitch(speedFactor, boost);
   });
 
   const isAgent = activeRole === 'AGENT';
 
   return (
-    <RigidBody ref={setRigidBodyRef} type="kinematicPosition" colliders={false} position={SPAWN_POSITION}>
+    <RigidBody
+      ref={setRigidBodyRef}
+      type="kinematicPosition"
+      colliders={false}
+      position={SPAWN_POSITION}
+      onCollisionEnter={handleCollisionEnter}
+    >
       <CuboidCollider args={[1.1, 0.6, 1.9]} />
       <group ref={tiltGroupRef}>
         {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
         <DriftDust intensityRef={driftIntensity} />
+        <BoostTrail intensityRef={boostIntensity} />
       </group>
     </RigidBody>
   );
@@ -263,6 +383,65 @@ function DriftDust({ intensityRef }: { intensityRef: React.MutableRefObject<numb
         opacity={0}
         depthWrite={false}
         roughness={1}
+      />
+    </instancedMesh>
+  );
+}
+
+const BOOST_PARTICLE_COUNT = 20;
+
+/**
+ * Nitro boost wheel trail: twin neon-cyan streaks (odd/even seeds alternate
+ * left/right of the rear axle) whose opacity/reach track boostIntensity (set
+ * in the parent Vehicle's useFrame). Unlit + toneMapped=false so Environment.tsx's
+ * Bloom picks it up, matching the rest of the scene's neon glow treatment.
+ */
+function BoostTrail({ intensityRef }: { intensityRef: React.MutableRefObject<number> }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: BOOST_PARTICLE_COUNT }, (_, index) => ({
+        side: index % 2 === 0 ? -1 : 1,
+        speed: 1.2 + Math.random() * 0.6,
+        phase: Math.random(),
+      })),
+    [],
+  );
+
+  useFrame((state) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const intensity = THREE.MathUtils.clamp(intensityRef.current, 0, 1);
+    if (materialRef.current) materialRef.current.opacity = intensity * 0.85;
+    mesh.visible = intensity > 0.05;
+    if (!mesh.visible) return;
+
+    const t = state.clock.elapsedTime;
+    seeds.forEach((seed, index) => {
+      const cycle = (t * seed.speed + seed.phase) % 1;
+      dummy.position.set(seed.side * 0.55, 0.35, -1.9 - cycle * 5 * (0.5 + intensity));
+      dummy.scale.setScalar((0.1 + intensity * 0.16) * (1 - cycle * 0.6));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, BOOST_PARTICLE_COUNT]} visible={false}>
+      <sphereGeometry args={[0.28, 6, 6]} />
+      <meshStandardMaterial
+        ref={materialRef}
+        color="#22d3ee"
+        emissive="#22d3ee"
+        emissiveIntensity={4}
+        toneMapped={false}
+        transparent
+        opacity={0}
+        depthWrite={false}
       />
     </instancedMesh>
   );

@@ -292,6 +292,9 @@ export function calculateVoucherReward(totalEarnings: number): VoucherReward {
   return { voucherCount, voucherValue, code: voucherCount > 0 ? generateVoucherCode() : null };
 }
 
+/** Hidden Easter Egg reward — the golden gem atop the Dubai Mall stunt ramp. */
+export const SECRET_VOUCHER_CODE = 'DUBAI_VIP50';
+
 export const BUSINESS_FEATURES: Record<BusinessFeatureKey, BusinessFeature> = {
   AI_COMPARISON: {
     key: 'AI_COMPARISON',
@@ -312,6 +315,11 @@ export const BUSINESS_FEATURES: Record<BusinessFeatureKey, BusinessFeature> = {
     key: 'AGENT_EARNINGS',
     title: 'Agent Earning Model',
     description: 'ReSmart Agents earn a testing fee plus a delivery bonus on every verified order they complete.',
+  },
+  SECRET_VOUCHER: {
+    key: 'SECRET_VOUCHER',
+    title: 'Secret Voucher Unlocked!',
+    description: `You found the hidden gem. Use code ${SECRET_VOUCHER_CODE} for an exclusive discount at ReSmart launch.`,
   },
 };
 

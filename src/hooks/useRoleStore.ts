@@ -43,6 +43,7 @@ interface RoleState {
   isLeadModalOpen: boolean;
   leadModalSource: string | null;
   hasSubmittedLead: boolean;
+  hasFoundEasterEgg: boolean;
 
   // Customer loop
   customerWallet: number;
@@ -81,6 +82,7 @@ interface RoleState {
   openLeadModal: (source?: string) => void;
   closeLeadModal: () => void;
   markLeadSubmitted: () => void;
+  unlockEasterEgg: () => void;
 
   collectCashback: (id: string, amount: number) => void;
   startExpressOrder: () => void;
@@ -110,6 +112,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   isLeadModalOpen: false,
   leadModalSource: null,
   hasSubmittedLead: false,
+  hasFoundEasterEgg: false,
 
   customerWallet: 0,
   collectedPickupIds: [],
@@ -178,6 +181,12 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   },
   closeLeadModal: () => set({ isLeadModalOpen: false }),
   markLeadSubmitted: () => set({ hasSubmittedLead: true, isLeadModalOpen: false }),
+
+  unlockEasterEgg: () => {
+    if (get().hasFoundEasterEgg) return;
+    set({ hasFoundEasterEgg: true });
+    get().pushFeaturePopup('SECRET_VOUCHER');
+  },
 
   collectCashback: (id, amount) => {
     if (get().collectedPickupIds.includes(id)) return;
