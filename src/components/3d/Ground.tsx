@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Grid } from '@react-three/drei';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
@@ -17,7 +18,7 @@ const WALL_THICKNESS = 2;
  * fixed-body walls at each edge as a physics-level backstop against the
  * vehicle's own manual clamp (see Vehicle.tsx).
  */
-export function Ground() {
+export const Ground = memo(function Ground() {
   return (
     <>
       <RigidBody type="fixed" colliders="cuboid" friction={1}>
@@ -56,4 +57,4 @@ export function Ground() {
       </RigidBody>
     </>
   );
-}
+});

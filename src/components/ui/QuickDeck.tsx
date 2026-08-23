@@ -43,9 +43,9 @@ export function QuickDeck() {
         <ul className="mt-3 max-h-64 space-y-3 overflow-y-auto">
           {Object.values(PITCH_METRICS).map((metric) => (
             <li key={metric.label} className="border-b border-neutral-100 pb-2 last:border-none">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm text-neutral-700">{metric.label}</span>
-                <span className="text-sm font-semibold text-neutral-900">{formatValue(metric.value)}</span>
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="min-w-0 truncate text-sm text-neutral-700">{metric.label}</span>
+                <span className="shrink-0 text-sm font-semibold text-neutral-900">{formatValue(metric.value)}</span>
               </div>
               {/* text-neutral-500/600 (not the -400/-300 this used to be) — those fail WCAG contrast on this white card. */}
               <p className="mt-0.5 text-xs text-neutral-500">{metric.assumption}</p>

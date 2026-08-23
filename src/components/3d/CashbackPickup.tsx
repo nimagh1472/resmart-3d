@@ -60,7 +60,9 @@ export function CashbackPickup({ pickup, vehicleRef }: CashbackPickupProps) {
           {`AED ${pickup.amount}`}
         </FacingText>
       </group>
-      <pointLight position={[0, 1.5, 0]} color="#facc15" intensity={12} distance={8} decay={2} />
+      {/* No pointLight: real-time point lights are capped scene-wide at 2
+          (see Experience.tsx/Vehicle.tsx) — the emissive coin material
+          already glows under Environment.tsx's Bloom pass. */}
     </group>
   );
 }

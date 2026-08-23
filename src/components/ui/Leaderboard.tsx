@@ -34,7 +34,7 @@ export function Leaderboard() {
 
   return (
     <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-asphalt/70 backdrop-blur-sm">
-      <div className="animate-modal-in relative w-full max-w-lg rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
+      <div className="animate-modal-in relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-3xl border border-white/15 bg-white/10 p-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl">
         <button
           onClick={closeLeaderboard}
           aria-label="Close leaderboard"

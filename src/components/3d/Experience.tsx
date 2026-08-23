@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, type RootState } from '@react-three/fiber';
 import { Physics, type RapierRigidBody } from '@react-three/rapier';
-import { PerformanceMonitor } from '@react-three/drei';
+import { AdaptiveDpr, PerformanceMonitor } from '@react-three/drei';
 import { ACESFilmicToneMapping } from 'three';
 import { Environment } from '@/components/3d/Environment';
 import { Ground } from '@/components/3d/Ground';
@@ -82,7 +82,7 @@ export function Experience() {
       key={canvasKey}
       shadows={isMobile || isDegraded ? false : 'soft'}
       camera={{ position: [20, 18, 20], fov: 42, near: 0.5, far: 800 }}
-      dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)}
+      dpr={[1, 1.5]}
       gl={{
         toneMapping: ACESFilmicToneMapping,
         toneMappingExposure: 0.95,
@@ -94,11 +94,15 @@ export function Experience() {
       onCreated={handleCreated}
     >
       <PerformanceMonitor
-        bounds={() => [45, 60]}
+        bounds={() => [50, 60]}
         flipflops={2}
         onDecline={() => setIsDegraded(true)}
         onIncline={() => setIsDegraded(false)}
       />
+      {/* Ties the Canvas's dpr={[1, 1.5]} range to PerformanceMonitor's live
+          fps sample — resolution scales down automatically once sustained
+          frames drop below the bounds above, and back up once they recover. */}
+      <AdaptiveDpr pixelated={false} />
       <Suspense fallback={null}>
         <Physics gravity={[0, -9.81, 0]}>
           <Environment isMobile={isMobile || isDegraded} />

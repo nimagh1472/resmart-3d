@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowRight, Car, Clapperboard, Gem, MapPin, Sparkles, Timer, UserRound } from 'lucide-react';
+import { ArrowRight, Building2, Car, Clapperboard, Gem, MapPin, Search, Sparkles, Timer, Truck, UserRound } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
@@ -33,6 +33,20 @@ function getCountdownParts(now: number): CountdownParts {
 function pad(value: number): string {
   return value.toString().padStart(2, '0');
 }
+
+// Equal-weight callout for all 3 sides of the business model, so a visitor
+// grasps the mechanics (who pays whom, how) within seconds — the prose
+// paragraph below states the same thing but buries Merchants in a
+// subordinate clause with no visual parity against Customers/Drivers.
+const HOW_IT_WORKS: Array<{ icon: typeof Search; label: string; description: string }> = [
+  { icon: Search, label: 'Customers Search', description: 'AI-matched local deals and merchants, ranked instantly.' },
+  {
+    icon: Building2,
+    label: 'Merchants Advertise',
+    description: 'Monthly subscription + daily ad budget to feature in search, plus 4% affiliate on sales.',
+  },
+  { icon: Truck, label: 'Drivers Deliver', description: 'AI-optimized, zero-commission routes — a micro-fee per delivery.' },
+];
 
 const CAMPAIGN_ROLES: Array<{ role: ProfileRole; icon: typeof Car; description: string }> = [
   { role: 'driver', icon: Car, description: 'Complete driver runs and rank in the Top 50 for 3 months of 0% commission.' },
@@ -91,7 +105,7 @@ export function LandingOverlay() {
           </div>
 
           <h1 className="mt-4 text-center text-2xl font-semibold leading-tight text-white sm:text-4xl">
-            ReSmart AI — The AI Search &amp; Autonomous Logistics Engine in Dubai
+            ReSmart AI — Dubai&apos;s AI Search Engine &amp; Smart Logistics Network
           </h1>
 
           <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-neutral-300 sm:text-base">
@@ -102,6 +116,19 @@ export function LandingOverlay() {
 
           <div className="mx-auto mt-2 flex items-center justify-center gap-1.5 text-xs text-cyan-300/80">
             <MapPin size={12} /> Downtown Dubai · Sheikh Mohammed bin Rashid Boulevard
+          </div>
+
+          {/* How it works — Customer / Merchant / Driver at equal visual weight */}
+          <div className="mx-auto mt-5 grid max-w-2xl gap-2.5 sm:grid-cols-3">
+            {HOW_IT_WORKS.map(({ icon: Icon, label, description }) => (
+              <div key={label} className="rounded-xl border border-white/10 bg-white/[0.04] p-3 text-left">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-cyan-300">
+                  <Icon size={14} className="shrink-0" />
+                  <span className="truncate">{label}</span>
+                </div>
+                <p className="mt-1 text-[11px] leading-relaxed text-neutral-400">{description}</p>
+              </div>
+            ))}
           </div>
 
           {/* Countdown */}

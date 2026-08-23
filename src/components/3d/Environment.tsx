@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { EffectComposer, SSAO, Bloom, Vignette } from '@react-three/postprocessing';
 import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Sky } from '@react-three/drei';
@@ -77,7 +77,7 @@ interface EnvironmentProps {
  * Postprocessing (SSAO contact shadows + bloom on emissive/glass accents)
  * only runs on desktop — both are relatively expensive per-pixel passes.
  */
-export function Environment({ isMobile }: EnvironmentProps) {
+export const Environment = memo(function Environment({ isMobile }: EnvironmentProps) {
   const isLowEnd = useMemo(() => isMobile || detectLowEndGpu(), [isMobile]);
 
   return (
@@ -98,7 +98,7 @@ export function Environment({ isMobile }: EnvironmentProps) {
       <directionalLight
         castShadow={!isMobile}
         position={SUN_DIRECTION}
-        intensity={2.1}
+        intensity={1.2}
         color="#FFB066"
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-40}
@@ -141,7 +141,7 @@ export function Environment({ isMobile }: EnvironmentProps) {
         })()}
     </>
   );
-}
+});
 
 /**
  * Dubai Creek/waterfront stand-in beyond the drivable WORLD_BOUNDS: a large

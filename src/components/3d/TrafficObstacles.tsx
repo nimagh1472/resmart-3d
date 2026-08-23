@@ -279,7 +279,9 @@ function EasterEggGem({ vehicleRef }: { vehicleRef: React.RefObject<RapierRigidB
             roughness={0.1}
           />
         </mesh>
-        <pointLight color="#facc15" intensity={18} distance={11} decay={2} />
+        {/* No pointLight: real-time point lights are capped scene-wide at 2
+            (see Experience.tsx/Vehicle.tsx) — the emissive gem already glows
+            under Environment.tsx's Bloom pass. */}
       </group>
       <FacingText position={[0, GEM_POSITION[1] + 1.1, 0]} fontSize={0.4} color="#facc15" anchorX="center" anchorY="middle">
         SECRET GEM

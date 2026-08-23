@@ -31,7 +31,9 @@ export function StoryHUD() {
   const currentChapter = chapters[Math.min(chapterIndex, chapters.length - 1)];
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-24 z-20 flex justify-center px-4 md:bottom-6 md:justify-start md:pl-6">
+    // bottom-52 (208px) on mobile clears TouchControls' joystick zone (bottom-4
+    // + h-44 = top edge at 192px) so the two never vertically overlap.
+    <div className="pointer-events-none absolute inset-x-0 bottom-52 z-20 flex justify-center px-4 md:bottom-6 md:justify-start md:pl-6">
       <div
         key={chapterIndex}
         className="animate-feature-pop pointer-events-auto max-w-sm rounded-2xl border border-white/10 bg-neutral-950/80 p-4 shadow-2xl backdrop-blur"

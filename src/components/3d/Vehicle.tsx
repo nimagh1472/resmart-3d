@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, type RapierRigidBody, type CollisionEnterPayload } from '@react-three/rapier';
 import { ContactShadows, Sparkles } from '@react-three/drei';
@@ -95,7 +95,7 @@ interface VehicleProps {
  * switches between the Customer City Car and the Agent Scooter based on
  * activeRole.
  */
-export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicle({ isMobile }, ref) {
+export const Vehicle = memo(forwardRef<RapierRigidBody, VehicleProps>(function Vehicle({ isMobile }, ref) {
   const activeRole = useRoleStore((state) => state.activeRole);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const speedBoostMultiplier = useRoleStore((state) => state.speedBoostMultiplier);
@@ -362,7 +362,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
       </group>
     </>
   );
-});
+}));
 
 /**
  * Rear-mounted tire dust: a shared-material instanced puff cloud whose
@@ -601,14 +601,16 @@ function CustomerCityCar({ isMobile }: VehicleMeshProps) {
         [0.65, 0.4, 1.82],
         [-0.65, 0.4, 1.82],
       ].map((lightPosition, index) => (
-        <group key={`headlight-${index}`} position={lightPosition as [number, number, number]}>
-          <mesh>
-            <boxGeometry args={[0.3, 0.15, 0.05]} />
-            <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
-          </mesh>
-          {!isMobile && <pointLight color="#bfe9ff" intensity={4} distance={9} decay={2} position={[0, 0, 0.3]} />}
-        </group>
+        <mesh key={`headlight-${index}`} position={lightPosition as [number, number, number]}>
+          <boxGeometry args={[0.3, 0.15, 0.05]} />
+          <meshStandardMaterial color="#7dd3fc" emissive="#7dd3fc" emissiveIntensity={2} toneMapped={false} />
+        </mesh>
       ))}
+      {/* Single shared headlight pointLight (not one per side) — real-time
+          point lights are capped scene-wide at 2 alongside the Central
+          Tower's beacon (World.tsx); the individual headlight meshes above
+          stay emissive-only and still glow via Environment.tsx's Bloom. */}
+      {!isMobile && <pointLight color="#bfe9ff" intensity={5} distance={10} decay={2} position={[0, 0.4, 2.1]} />}
       {[
         [0.65, 0.4, -1.82],
         [-0.65, 0.4, -1.82],

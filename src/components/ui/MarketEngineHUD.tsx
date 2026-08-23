@@ -65,7 +65,7 @@ export function MarketEngineHUD() {
   });
 
   return (
-    <div className="pointer-events-auto absolute right-4 top-24 z-30 w-64 overflow-hidden rounded-2xl border border-cyan-400/20 bg-neutral-950/75 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+    <div className="pointer-events-auto absolute right-4 top-24 z-30 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-cyan-400/20 bg-neutral-950/75 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
       <button
         onClick={() => setIsExpanded((value) => !value)}
         className="flex w-full items-center justify-between gap-2 px-4 py-3 text-left transition hover:bg-white/5"
@@ -85,11 +85,11 @@ export function MarketEngineHUD() {
         <div className="space-y-4 border-t border-white/5 px-4 pb-4 pt-3">
           {/* Wallet + voucher progress */}
           <div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-[10px] uppercase tracking-widest text-neutral-400">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="shrink-0 text-[10px] uppercase tracking-widest text-neutral-400">
                 {activeRole === 'AGENT' ? 'Driver earnings' : 'Wallet'}
               </span>
-              <span className="text-lg font-semibold text-white">{currencyFormatter.format(balance)}</span>
+              <span className="min-w-0 truncate text-lg font-semibold text-white">{currencyFormatter.format(balance)}</span>
             </div>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
               <div

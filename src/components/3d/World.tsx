@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Line, MeshReflectorMaterial, Sparkles } from '@react-three/drei';
 import type { Line2, LineMaterial } from 'three-stdlib';
@@ -10,7 +10,7 @@ import { FacingText } from '@/components/3d/FacingText';
 import { GLASS_TOWER_MATERIAL_PROPS, BACKGROUND_BUILDING_MATERIAL_PROPS } from '@/components/3d/Environment';
 
 const ASPHALT_COLOR = '#1E252B'; // Deep Slate Asphalt — matches the brand palette's asphalt token (tailwind.config.ts)
-const LANE_GLOW_COLOR = '#00F0FF';
+const LANE_GLOW_COLOR = '#00E5FF'; // matches tailwind.config.ts's neonCyan token
 
 // Scratch objects reused to compose a "group position/rotationY + local
 // child position/rotation" transform (matching the nested <group><mesh/>
@@ -533,7 +533,13 @@ function PalmTrees() {
   );
 }
 
-/** All street lamps as two InstancedMeshes (poles, bulbs); point lights stay per-lamp since lights can't be instanced. */
+/**
+ * All street lamps as two InstancedMeshes (poles, bulbs). No per-lamp
+ * pointLight — real-time point lights are capped scene-wide at 2 (see
+ * Experience.tsx/Vehicle.tsx) to keep the shader's per-fragment light loop
+ * cheap, so the bulbs rely on their unlit emissive material + Environment.tsx's
+ * Bloom pass for the glow instead of actually casting light.
+ */
 function StreetLamps() {
   const poleRef = useRef<THREE.InstancedMesh>(null);
   const bulbRef = useRef<THREE.InstancedMesh>(null);
@@ -561,9 +567,6 @@ function StreetLamps() {
         <sphereGeometry args={[0.32, 8, 8]} />
         <meshStandardMaterial color="#fde68a" emissive="#fde68a" emissiveIntensity={2.5} toneMapped={false} />
       </instancedMesh>
-      {STREET_LAMPS.map((position, index) => (
-        <pointLight key={index} position={[position[0], 5, position[2]]} color="#fde68a" intensity={10} distance={14} decay={2} />
-      ))}
     </>
   );
 }
@@ -823,7 +826,8 @@ const PIN_COLORS: Record<string, string> = {
 /**
  * Floating neon location pin hovering above a store hub / merchant test
  * bench / drop-off point — bobs and slowly spins, and glows under Bloom via
- * an overbright (>1 component) unlit color.
+ * an overbright (>1 component) unlit color. No pointLight: real-time point
+ * lights are capped scene-wide at 2 (see Experience.tsx/Vehicle.tsx).
  */
 function LocationPin({ position, color }: { position: [number, number, number]; color: string }) {
   const bobRef = useRef<THREE.Group>(null);
@@ -853,7 +857,6 @@ function LocationPin({ position, color }: { position: [number, number, number]; 
             opacity={0.9}
           />
         </mesh>
-        <pointLight color={color} intensity={12} distance={16} decay={2} />
       </group>
     </group>
   );
@@ -915,7 +918,7 @@ interface WorldProps {
  * WORLD_BOUNDS. Every label goes through FacingText so it reads correctly
  * from either driving direction.
  */
-export function World({ isMobile }: WorldProps) {
+export const World = memo(function World({ isMobile }: WorldProps) {
   return (
     <>
       <CentralTower />
@@ -936,4 +939,4 @@ export function World({ isMobile }: WorldProps) {
       ))}
     </>
   );
-}
+});

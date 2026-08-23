@@ -29,7 +29,11 @@ export function QuickTutorialOverlay({ message, triggerKey }: QuickTutorialOverl
   if (!isVisible) return null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 top-20 z-20 flex justify-center px-4">
+    // top-36 (not top-20) — FeaturePopupHUD renders at top-20 with a higher
+    // z-index; if a station completes within this overlay's 5s window both
+    // would otherwise land on the exact same coordinates, fully hiding this
+    // hint behind the popup instead of the two being able to coexist stacked.
+    <div className="pointer-events-none absolute inset-x-0 top-36 z-20 flex justify-center px-4">
       <div className="flex items-center gap-2 rounded-full border border-cyan-400/30 bg-black/50 px-4 py-2 text-center text-xs font-medium text-white shadow-lg backdrop-blur-md">
         <Gamepad2 size={14} className="shrink-0 text-cyan-300" />
         {message}
