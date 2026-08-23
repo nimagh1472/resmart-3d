@@ -658,7 +658,7 @@ function DeliveryRoutes() {
 
 function GlowingRoute({ points, color }: { points: THREE.Vector3[]; color: string }) {
   const lineRef = useRef<Line2>(null);
-  const glowColor = useMemo(() => new THREE.Color(color).multiplyScalar(2.4), [color]);
+  const glowColor = useMemo(() => new THREE.Color(color).multiplyScalar(5.0), [color]);
 
   useFrame((state, delta) => {
     const material = lineRef.current?.material as LineMaterial | undefined;
