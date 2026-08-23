@@ -14,7 +14,10 @@
   }
 }
 
+html,
 body {
+  height: 100%;
+  overflow: hidden;
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
@@ -23,5 +26,17 @@ body {
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+}
+
+/* Drives CinematicBar.tsx's per-zone progress segments: a fresh element
+   (via a React `key` change) mounts with this animation and fills over
+   exactly CINEMATIC_DWELL_SECONDS, matching the camera's actual dwell time. */
+@keyframes cinematic-progress-fill {
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
   }
 }

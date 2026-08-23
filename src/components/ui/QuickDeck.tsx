@@ -1,0 +1,65 @@
+'use client';
+
+import { FileDown, X } from 'lucide-react';
+import { useRoleStore } from '@/hooks/useRoleStore';
+import { PITCH_DECK_PATH, PITCH_METRICS } from '@/lib/pitchData';
+
+function formatValue(value: number | string): string {
+  if (typeof value !== 'number') return value;
+  if (value >= 1_000_000) return `$${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
+  if (value >= 1_000) return `$${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
+  return `$${value.toLocaleString()}`;
+}
+
+/**
+ * 2D pitch deck modal surfacing every pitch metric with its source and
+ * assumption, plus a link to the full deck. All figures come from
+ * lib/pitchData — nothing here is hard-coded. Visibility is controlled by
+ * useRoleStore's isQuickDeckOpen (opened via Overlay's header PDF button)
+ * rather than local state, so it can be triggered from the HUD. Clicking
+ * the PDF link itself also opens the lead-capture modal.
+ */
+export function QuickDeck() {
+  const isOpen = useRoleStore((state) => state.isQuickDeckOpen);
+  const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
+  const openLeadModal = useRoleStore((state) => state.openLeadModal);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-neutral-950/60 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-neutral-900">Key Figures</h3>
+          <button onClick={() => setQuickDeckOpen(false)} aria-label="Close quick pitch deck">
+            <X size={16} className="text-neutral-500" />
+          </button>
+        </div>
+
+        <ul className="mt-3 max-h-96 space-y-3 overflow-y-auto">
+          {Object.values(PITCH_METRICS).map((metric) => (
+            <li key={metric.label} className="border-b border-neutral-100 pb-2 last:border-none">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm text-neutral-700">{metric.label}</span>
+                <span className="text-sm font-semibold text-neutral-900">{formatValue(metric.value)}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-neutral-400">{metric.assumption}</p>
+              <p className="text-[10px] uppercase tracking-wide text-neutral-300">{metric.source}</p>
+            </li>
+          ))}
+        </ul>
+
+        <a
+          href={PITCH_DECK_PATH}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => openLeadModal('pdf_download')}
+          className="mt-4 flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-neutral-700"
+        >
+          <FileDown size={14} />
+          Full Pitch Deck (PDF)
+        </a>
+      </div>
+    </div>
+  );
+}
