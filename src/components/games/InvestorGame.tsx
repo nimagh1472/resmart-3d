@@ -109,9 +109,11 @@ export function InvestorGame() {
       {/* Below sm, a fixed 320px left sidebar would cover ~85% of a 375px-class
           viewport and hide the 3D tour entirely — so it docks as a capped-height
           bottom sheet on mobile instead, and only becomes the original full-height
-          left sidebar at sm+ (640px), where 320px is a modest fraction of the width. */}
+          left sidebar at sm+ (640px), where 320px is a modest fraction of the width.
+          Capped well under full viewport height on both breakpoints so the 3D Dubai
+          scene stays visible above/beside it rather than being blocked. */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[25] flex justify-center sm:inset-x-auto sm:inset-y-0 sm:left-4 sm:items-center sm:justify-start">
-        <div className="animate-modal-in pointer-events-auto max-h-[50vh] w-full overflow-y-auto rounded-t-3xl border-t border-white/15 bg-white/10 p-5 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl sm:max-h-[85vh] sm:w-80 sm:rounded-3xl sm:border">
+        <div className="animate-modal-in pointer-events-auto max-h-[42vh] w-full overflow-y-auto rounded-t-3xl border-t border-white/15 bg-white/10 p-5 pb-6 shadow-2xl shadow-cyan-500/10 backdrop-blur-2xl sm:max-h-[68vh] sm:w-80 sm:rounded-3xl sm:border">
           <div className="flex items-center gap-2 text-cyan-300">
             <LineChart size={16} />
             <span className="text-xs font-semibold uppercase tracking-widest">Strategy Dashboard</span>
@@ -197,11 +199,11 @@ export function InvestorGame() {
 
               <div
                 className={clsx(
-                  'flex items-center gap-2 rounded-xl border px-3 py-2.5 text-xs',
+                  'flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs leading-relaxed',
                   qualification.isQualified ? 'border-emerald-400/30 bg-emerald-400/10 text-emerald-300' : 'border-amber-400/30 bg-amber-400/10 text-amber-300',
                 )}
               >
-                <Award size={14} className="shrink-0" />
+                <Award size={14} className="mt-0.5 shrink-0" />
                 {qualification.isQualified ? (
                   <span>
                     Top 50! Qualified for <span className="font-semibold">Top 50 Investor — {ROLE_BADGES.investor}</span>.

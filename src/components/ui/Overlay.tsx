@@ -7,7 +7,7 @@ import { Car, ChevronLeft, Clapperboard, FileText, Home, IdCard, Sparkles, Troph
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
-import type { PresentationMode, RoleType, StoryRoleKey } from '@/types';
+import type { RoleType, StoryRoleKey } from '@/types';
 import { MiniMap } from '@/components/ui/MiniMap';
 import { MarketEngineHUD } from '@/components/ui/MarketEngineHUD';
 
@@ -23,11 +23,12 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   maximumFractionDigits: 0,
 });
 
-function getRoleLabel(activeRole: RoleType, presentationMode: PresentationMode): string {
+// Only called while isSessionActive (see below) — activeRole is always
+// CUSTOMER/AGENT, or presentationMode is CINEMATIC, by that point.
+function getRoleLabel(activeRole: RoleType): string {
   if (activeRole === 'AGENT') return 'Driver';
   if (activeRole === 'CUSTOMER') return 'Customer';
-  if (presentationMode === 'CINEMATIC') return 'Investor Tour';
-  return 'Guest';
+  return 'Investor Tour';
 }
 
 function formatCountdown(totalSeconds: number): string {
@@ -76,6 +77,13 @@ export function Overlay() {
   const isCustomer = activeRole === 'CUSTOMER';
   const isAgent = activeRole === 'AGENT';
 
+  // Both LandingOverlay and RoleSelector fill the screen at z-30 whenever
+  // !isSessionActive — this chrome sits at z-40 above them, so it must stay
+  // hidden for that whole window instead of floating its "Guest" pill over
+  // their onboarding UI (see LandingOverlay.tsx's header for what it used to
+  // overlap).
+  if (!isSessionActive) return null;
+
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-2 p-4">
@@ -90,7 +98,7 @@ export function Overlay() {
           </button>
           <span className="text-white/10">|</span>
           <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-neutral-300">
-            {getRoleLabel(activeRole, presentationMode)}
+            {getRoleLabel(activeRole)}
           </span>
           {chapterIndex !== null && (
             <>
@@ -112,24 +120,20 @@ export function Overlay() {
         </div>
 
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-neonCyan/25 bg-darkGlass/75 backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
-          {isSessionActive && (
-            <>
-              <button
-                onClick={backToHub}
-                className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:bg-white/10"
-              >
-                <ChevronLeft size={14} /> <span className="hidden sm:inline">Hub</span>
-              </button>
-              <button
-                onClick={goHome}
-                aria-label="Return to home screen"
-                className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
-              >
-                <Home size={14} />
-              </button>
-              <span className="text-white/10">|</span>
-            </>
-          )}
+          <button
+            onClick={backToHub}
+            className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-neutral-300 transition hover:bg-white/10"
+          >
+            <ChevronLeft size={14} /> <span className="hidden sm:inline">Hub</span>
+          </button>
+          <button
+            onClick={goHome}
+            aria-label="Return to home screen"
+            className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
+          >
+            <Home size={14} />
+          </button>
+          <span className="text-white/10">|</span>
           <button
             onClick={() => setPresentationMode('INTERACTIVE')}
             aria-label="Switch to interactive 3D drive"

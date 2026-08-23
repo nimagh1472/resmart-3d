@@ -50,11 +50,11 @@ function Car({ carRef }: { carRef: React.RefObject<THREE.Group> }) {
     <group ref={carRef}>
       <mesh position={[0, 0.55, 0]} castShadow={false}>
         <boxGeometry args={[1.7, 0.7, 3.4]} />
-        <meshStandardMaterial color="#0891b2" metalness={0.4} roughness={0.35} />
+        <meshStandardMaterial color="#0891b2" metalness={0.85} roughness={0.18} />
       </mesh>
       <mesh position={[0, 1.05, -0.2]} castShadow={false}>
         <boxGeometry args={[1.3, 0.5, 1.6]} />
-        <meshStandardMaterial color="#0e7490" metalness={0.3} roughness={0.3} />
+        <meshStandardMaterial color="#0e7490" metalness={0.75} roughness={0.15} />
       </mesh>
       {wheelPositions.map((position, index) => (
         <mesh key={index} position={position} rotation={[0, 0, Math.PI / 2]} castShadow={false}>
@@ -94,12 +94,56 @@ function NodeMarker({ position }: { position: [number, number, number] }) {
   );
 }
 
+const SKYLINE_GLOW_COLORS = ['#00E5FF', '#FFD166', '#4ECDC4'];
+
+/** Glowing glass skyscraper — an opaque metallic-glass tower with an emissive window band, echoing 3d/World.tsx's Building(). */
+function GlassTower({
+  position,
+  width,
+  height,
+  depth,
+  glowColor,
+}: {
+  position: [number, number, number];
+  width: number;
+  height: number;
+  depth: number;
+  glowColor: string;
+}) {
+  return (
+    <group position={position}>
+      <mesh position={[0, height / 2, 0]} castShadow={false}>
+        <boxGeometry args={[width, height, depth]} />
+        <meshStandardMaterial color="#BFE9F5" metalness={0.85} roughness={0.2} />
+      </mesh>
+      <mesh position={[0, height * 0.62, depth / 2 + 0.02]}>
+        <boxGeometry args={[width * 0.7, height * 0.12, 0.05]} />
+        <meshStandardMaterial color={glowColor} emissive={glowColor} emissiveIntensity={2.2} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
 function Skyline() {
   const buildings = useMemo(() => {
-    const items: Array<{ x: number; z: number; width: number; height: number; depth: number }> = [];
+    const items: Array<{ x: number; z: number; width: number; height: number; depth: number; glowColor: string }> = [];
     for (let z = 0; z < ROAD_LENGTH; z += 22) {
-      items.push({ x: -(ROAD_WIDTH / 2 + 6 + Math.random() * 4), z, width: 6, height: 10 + Math.random() * 22, depth: 6 });
-      items.push({ x: ROAD_WIDTH / 2 + 6 + Math.random() * 4, z: z + 10, width: 6, height: 10 + Math.random() * 22, depth: 6 });
+      items.push({
+        x: -(ROAD_WIDTH / 2 + 6 + Math.random() * 4),
+        z,
+        width: 6,
+        height: 10 + Math.random() * 22,
+        depth: 6,
+        glowColor: SKYLINE_GLOW_COLORS[items.length % SKYLINE_GLOW_COLORS.length],
+      });
+      items.push({
+        x: ROAD_WIDTH / 2 + 6 + Math.random() * 4,
+        z: z + 10,
+        width: 6,
+        height: 10 + Math.random() * 22,
+        depth: 6,
+        glowColor: SKYLINE_GLOW_COLORS[items.length % SKYLINE_GLOW_COLORS.length],
+      });
     }
     return items;
   }, []);
@@ -107,12 +151,58 @@ function Skyline() {
   return (
     <>
       {buildings.map((building, index) => (
-        <mesh key={index} position={[building.x, building.height / 2, building.z]} castShadow={false}>
-          <boxGeometry args={[building.width, building.height, building.depth]} />
-          <meshStandardMaterial color="#0e2438" metalness={0.6} roughness={0.3} />
-        </mesh>
+        <GlassTower
+          key={index}
+          position={[building.x, 0, building.z]}
+          width={building.width}
+          height={building.height}
+          depth={building.depth}
+          glowColor={building.glowColor}
+        />
       ))}
     </>
+  );
+}
+
+const BURJ_SEGMENTS = [
+  { width: 9, height: 12 },
+  { width: 7, height: 10 },
+  { width: 5.2, height: 8 },
+  { width: 3.6, height: 7 },
+  { width: 2.2, height: 6 },
+];
+const BURJ_SPIRE_HEIGHT = 14;
+const BURJ_POSITION: [number, number, number] = [0, 0, ROAD_LENGTH + 130];
+
+/** Distant Burj Khalifa-inspired landmark tower, visible ahead through the haze as the road's endpoint. */
+function BurjKhalifaLandmark() {
+  let cumulativeHeight = 0;
+  const segments = BURJ_SEGMENTS.map((segment) => {
+    const y = cumulativeHeight;
+    cumulativeHeight += segment.height;
+    return { ...segment, y };
+  });
+
+  return (
+    <group position={BURJ_POSITION}>
+      {segments.map((segment, index) => (
+        <mesh key={index} position={[0, segment.y + segment.height / 2, 0]} castShadow={false}>
+          <boxGeometry args={[segment.width, segment.height, segment.width]} />
+          <meshStandardMaterial color="#D4F1F9" metalness={0.9} roughness={0.15} />
+        </mesh>
+      ))}
+      <mesh position={[0, cumulativeHeight + BURJ_SPIRE_HEIGHT / 2, 0]} castShadow={false}>
+        <coneGeometry args={[1.1, BURJ_SPIRE_HEIGHT, 8]} />
+        <meshStandardMaterial color="#FFD166" emissive="#FFD166" emissiveIntensity={3} toneMapped={false} />
+      </mesh>
+      <pointLight
+        position={[0, cumulativeHeight + BURJ_SPIRE_HEIGHT, 0]}
+        color="#FFD166"
+        intensity={60}
+        distance={140}
+        decay={2}
+      />
+    </group>
   );
 }
 
@@ -148,23 +238,29 @@ export function DriverGameScene() {
         stencil: false,
       }}
     >
-      <color attach="background" args={['#0b1424']} />
-      <fog attach="fog" args={['#0b1424', 40, 220]} />
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[20, 30, 10]} intensity={1.4} color="#dceeff" />
+      <color attach="background" args={['#D5E5ED']} />
+      <fog attach="fog" args={['#D5E5ED', 70, 340]} />
+      <hemisphereLight args={['#FFD8A8', '#8D7B68', 0.6]} />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[40, 30, 10]} intensity={1.9} color="#FFB066" />
 
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, ROAD_LENGTH / 2]} receiveShadow={false}>
+        <planeGeometry args={[ROAD_WIDTH + 90, ROAD_LENGTH + 260]} />
+        <meshStandardMaterial color="#E5DAC3" roughness={0.95} metalness={0} />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, ROAD_LENGTH / 2]} receiveShadow={false}>
         <planeGeometry args={[ROAD_WIDTH, ROAD_LENGTH + 40]} />
-        <meshStandardMaterial color="#1c2733" roughness={0.9} />
+        <meshStandardMaterial color="#334155" roughness={0.85} metalness={0.1} />
       </mesh>
       {[-LANE_WIDTH / 2, LANE_WIDTH / 2].map((x, index) => (
         <mesh key={index} position={[x, 0.01, ROAD_LENGTH / 2]}>
           <boxGeometry args={[0.12, 0.02, ROAD_LENGTH + 40]} />
-          <meshStandardMaterial color="#f8fafc" emissive="#f8fafc" emissiveIntensity={0.4} toneMapped={false} />
+          <meshStandardMaterial color="#00E5FF" emissive="#00E5FF" emissiveIntensity={0.9} toneMapped={false} />
         </mesh>
       ))}
 
       <Skyline />
+      <BurjKhalifaLandmark />
 
       {track.map((item) =>
         item.kind === 'obstacle' ? (

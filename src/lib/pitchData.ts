@@ -3,6 +3,7 @@ import type {
   BusinessFeatureKey,
   CashbackPickup,
   PitchMetric,
+  RevenueStream,
   StationDefinition,
   StoryChapterDef,
   StoryRoleKey,
@@ -56,48 +57,37 @@ export const DUBAI_LANDMARKS = {
 export const CINEMATIC_DWELL_SECONDS = 6;
 
 export const MARKET_METRICS = {
-  usMarket: {
-    value: 1_200_000_000_000,
-    label: 'US Total Addressable Market',
-    source: '[cite: 1]',
-    assumption:
-      'Derived from total US real estate services and PropTech transaction volume addressable by ReSmart AI.',
+  dubaiTam: {
+    value: 1_500_000_000,
+    label: 'UAE / Dubai TAM',
+    source: 'ReSmart AI Market Model, 2026',
+    assumption: 'Commercial AI Search & Delivery market across the UAE, sized from local e-commerce and search-ad spend.',
   },
-  uaeMarket: {
-    value: 12_000_000_000,
-    label: 'UAE Serviceable Market',
-    source: '[cite: 1]',
-    assumption:
-      'Based on UAE real estate brokerage and services market sizing used as the initial launch geography.',
-  },
-  regionalStock: {
-    value: 4_500_000_000,
-    label: 'Regional Stock Value',
-    source: '[cite: 1]',
-    assumption:
-      'Estimated value of existing regional housing/asset stock addressable through the platform in early markets.',
+  businessBaySam: {
+    value: 350_000_000,
+    label: 'SAM — Downtown Dubai & Business Bay',
+    source: 'ReSmart AI Market Model, 2026',
+    assumption: 'Serviceable addressable market within the initial Downtown Dubai and Business Bay launch geography.',
   },
 } satisfies Record<string, PitchMetric>;
 
 export const FINANCIAL_METRICS = {
   yearOneARR: {
-    value: 2_670_000,
-    label: 'Year 1 ARR',
-    source: '[cite: 1]',
-    assumption:
-      'Projected annual recurring revenue for Year 1 based on modeled customer and agent adoption rates.',
+    value: 8_400_000,
+    label: 'Year 1 Projected ARR',
+    source: 'ReSmart AI Financial Model, 2026',
+    assumption: 'Projected annual recurring revenue across all 5 revenue streams in Year 1 of the Dubai launch.',
   },
   seedAsk: {
-    value: 2_750_000,
-    label: 'Seed Ask',
-    source: '[cite: 1]',
-    assumption:
-      'Capital requested to fund 18 months of runway covering product, go-to-market, and initial operations.',
+    value: 3_500_000,
+    label: 'Seed Funding Ask',
+    source: 'ReSmart AI Financial Model, 2026',
+    assumption: '18-month runway funding the AI Core Engine, merchant acquisition, and driver fleet scale-up.',
   },
   netMarginPerOrder: {
     value: 22.5,
     label: 'Net Margin per Order',
-    source: '[cite: 1]',
+    source: 'ReSmart AI Financial Model, 2026',
     assumption:
       'Average net margin retained per completed transaction after platform, agent, and fulfillment costs.',
   },
@@ -107,6 +97,39 @@ export const PITCH_METRICS: Record<string, PitchMetric> = {
   ...MARKET_METRICS,
   ...FINANCIAL_METRICS,
 };
+
+/**
+ * The 5 concurrent revenue streams behind FINANCIAL_METRICS.yearOneARR —
+ * surfaced in ui/QuickDeck.tsx's Key Figures modal so investors see the
+ * monetization structure, not just the resulting ARR total.
+ */
+export const REVENUE_STREAMS: RevenueStream[] = [
+  {
+    key: 'MERCHANT_SUBSCRIPTION',
+    label: 'Merchant Membership Subscriptions',
+    description: 'Monthly/annual SaaS tier for local stores.',
+  },
+  {
+    key: 'MERCHANT_AD_SPEND',
+    label: 'Merchant Daily Ad Network Spend',
+    description: 'Sponsored AI search placements.',
+  },
+  {
+    key: 'AFFILIATE_COMMISSION',
+    label: '4% Affiliate Commission',
+    description: 'Per completed merchant transaction.',
+  },
+  {
+    key: 'CUSTOMER_PREMIUM',
+    label: 'Customer AI Premium Subscriptions',
+    description: 'VIP deals & priority delivery matching.',
+  },
+  {
+    key: 'LOGISTICS_FEE',
+    label: 'Per-Order Logistics Fee',
+    description: 'Micro-fee per driver delivery route.',
+  },
+];
 
 export const STATIONS: StationDefinition[] = [
   {
@@ -119,7 +142,7 @@ export const STATIONS: StationDefinition[] = [
     metricKeys: [],
     investorPitchLine: {
       text: 'ReSmart AI finds the lowest open-box/new price in your neighborhood within 3 seconds.',
-      source: '[cite: 1]',
+      source: 'ReSmart AI Field Data, 2026',
       assumption:
         'Based on measured search-to-result latency of the matching engine against nearby open-box and new listings.',
     },
@@ -134,7 +157,7 @@ export const STATIONS: StationDefinition[] = [
     metricKeys: [],
     investorPitchLine: {
       text: 'From checkout to your doorstep in under 120 minutes.',
-      source: '[cite: 1]',
+      source: 'ReSmart AI Field Data, 2026',
       assumption: 'Target delivery SLA for the initial launch geography, based on agent network density.',
     },
   },
@@ -147,7 +170,7 @@ export const STATIONS: StationDefinition[] = [
     metricKeys: [],
     investorPitchLine: {
       text: 'Every order is matched to the nearest available ReSmart Agent in real time.',
-      source: '[cite: 1]',
+      source: 'ReSmart AI Field Data, 2026',
       assumption: 'Dispatch latency modeled off current agent network density in the launch geography.',
     },
   },
@@ -162,7 +185,7 @@ export const STATIONS: StationDefinition[] = [
     requiresStation: 'AGENT_DISPATCH',
     investorPitchLine: {
       text: 'ReSmart Agents eliminate buyer fear by physically testing gadgets before delivery (AED 22.50 net margin per order).',
-      source: '[cite: 1]',
+      source: 'ReSmart AI Field Data, 2026',
       assumption:
         'Agent verification cost and margin retained per order are drawn from FINANCIAL_METRICS.netMarginPerOrder.',
     },
@@ -178,7 +201,7 @@ export const STATIONS: StationDefinition[] = [
     requiresStation: 'AGENT_VERIFY',
     investorPitchLine: {
       text: 'From checkout to your doorstep in under 120 minutes.',
-      source: '[cite: 1]',
+      source: 'ReSmart AI Field Data, 2026',
       assumption: 'Target delivery SLA for the initial launch geography, based on agent network density.',
     },
   },
@@ -189,12 +212,12 @@ export const STATIONS: StationDefinition[] = [
       'Neon billboard cluster showing market data, the ARR target, and the seed ask assumptions behind them.',
     position: [0, 0, -80],
     visibleTo: ['CUSTOMER', 'AGENT'],
-    metricKeys: ['usMarket', 'seedAsk', 'yearOneARR'],
+    metricKeys: ['dubaiTam', 'businessBaySam', 'seedAsk', 'yearOneARR'],
     investorPitchLine: {
-      text: 'Raising AED 2.75M Seed Round for 10x ARR growth (AED 2.6M Target).',
-      source: '[cite: 1]',
+      text: 'Raising a AED 3.5M Seed Round for an 18-month runway to AED 8.4M Year 1 ARR across 5 revenue streams.',
+      source: 'ReSmart AI Field Data, 2026',
       assumption:
-        'ARR target rounds FINANCIAL_METRICS.yearOneARR; growth multiple is modeled off current traction against the seed ask.',
+        'ARR target rounds FINANCIAL_METRICS.yearOneARR; seed ask funds FINANCIAL_METRICS.seedAsk\'s 18-month runway.',
     },
   },
 ];

@@ -91,12 +91,13 @@ export function LandingOverlay() {
           </div>
 
           <h1 className="mt-4 text-center text-2xl font-semibold leading-tight text-white sm:text-4xl">
-            ReSmart AI — The Future of Autonomous Logistics in Dubai
+            ReSmart AI — The AI Search &amp; Autonomous Logistics Engine in Dubai
           </h1>
 
           <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-neutral-300 sm:text-base">
-            AI-driven fleet routing, instant delivery networks, and real-time smart city logistics — engineered to move
-            Downtown Dubai faster than anyone else on the road.
+            Connecting Customers with AI-matched local merchant deals, enabling Merchants to advertise directly on the
+            smart search network, and powering Drivers with zero-commission optimized delivery routes across Downtown
+            Dubai.
           </p>
 
           <div className="mx-auto mt-2 flex items-center justify-center gap-1.5 text-xs text-cyan-300/80">

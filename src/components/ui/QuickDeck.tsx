@@ -1,8 +1,8 @@
 'use client';
 
-import { FileDown, X } from 'lucide-react';
+import { FileDown, Layers, X } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
-import { PITCH_DECK_PATH, PITCH_METRICS } from '@/lib/pitchData';
+import { PITCH_DECK_PATH, PITCH_METRICS, REVENUE_STREAMS } from '@/lib/pitchData';
 
 function formatValue(value: number | string): string {
   if (typeof value !== 'number') return value;
@@ -28,7 +28,7 @@ export function QuickDeck() {
 
   return (
     <div className="pointer-events-auto absolute inset-0 z-50 flex items-center justify-center bg-asphalt/60 backdrop-blur-sm">
-      <div className="animate-modal-in w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl">
+      <div className="animate-modal-in max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-2xl">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-neutral-900">Key Figures</h3>
           <button
@@ -40,7 +40,7 @@ export function QuickDeck() {
           </button>
         </div>
 
-        <ul className="mt-3 max-h-96 space-y-3 overflow-y-auto">
+        <ul className="mt-3 max-h-64 space-y-3 overflow-y-auto">
           {Object.values(PITCH_METRICS).map((metric) => (
             <li key={metric.label} className="border-b border-neutral-100 pb-2 last:border-none">
               <div className="flex items-baseline justify-between">
@@ -50,6 +50,19 @@ export function QuickDeck() {
               {/* text-neutral-500/600 (not the -400/-300 this used to be) — those fail WCAG contrast on this white card. */}
               <p className="mt-0.5 text-xs text-neutral-500">{metric.assumption}</p>
               <p className="text-[10px] uppercase tracking-wide text-neutral-500">{metric.source}</p>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-500">
+          <Layers size={13} />
+          Multi-Stream Revenue Model
+        </div>
+        <ul className="mt-2 max-h-40 space-y-2 overflow-y-auto">
+          {REVENUE_STREAMS.map((stream) => (
+            <li key={stream.key} className="rounded-lg bg-neutral-50 px-3 py-2">
+              <div className="text-xs font-semibold text-neutral-900">{stream.label}</div>
+              <div className="text-[11px] text-neutral-500">{stream.description}</div>
             </li>
           ))}
         </ul>

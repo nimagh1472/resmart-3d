@@ -54,6 +54,12 @@ export interface BusinessFeature {
   description: string;
 }
 
+export interface RevenueStream {
+  key: string;
+  label: string;
+  description: string;
+}
+
 export type AgentOrderStage = 'IDLE' | 'DISPATCHED' | 'VERIFIED';
 
 export type StoryRoleKey = 'CUSTOMER' | 'AGENT';
