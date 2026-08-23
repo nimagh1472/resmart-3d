@@ -44,7 +44,7 @@ export function MiniMap() {
   }, []);
 
   return (
-    <div className="pointer-events-none absolute bottom-4 left-4 z-10 hidden h-32 w-32 overflow-hidden rounded-xl border border-white/40 bg-white/70 shadow md:block">
+    <div className="pointer-events-none absolute bottom-4 left-4 z-10 hidden h-32 w-32 overflow-hidden rounded-xl border border-cyan-400/20 bg-neutral-950/75 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl md:block">
       <svg
         viewBox={`${WORLD_BOUNDS.minX} ${WORLD_BOUNDS.minZ} ${MAP_WIDTH} ${MAP_DEPTH}`}
         className="h-full w-full"

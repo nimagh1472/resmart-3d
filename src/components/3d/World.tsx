@@ -1,9 +1,11 @@
 'use client';
 
-import { useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
+import { Line } from '@react-three/drei';
+import type { Line2, LineMaterial } from 'three-stdlib';
 import * as THREE from 'three';
-import { DUBAI_LANDMARKS, WORLD_BOUNDS } from '@/lib/pitchData';
+import { DUBAI_LANDMARKS, STATIONS, WORLD_BOUNDS } from '@/lib/pitchData';
 import { FacingText } from '@/components/3d/FacingText';
 
 const { CENTRAL_TOWER_POSITION, BOULEVARD_INNER_RADIUS, BOULEVARD_OUTER_RADIUS, MALL_DISTRICT_CENTER, FOUNTAIN_POSITION } =
@@ -157,7 +159,15 @@ function Building({ position, width, depth, height, color, neonColor }: Building
     <group position={position}>
       <mesh position={[0, height / 2, 0]} castShadow>
         <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={color} />
+        <meshPhysicalMaterial
+          color={color}
+          roughness={0.15}
+          metalness={0.2}
+          transmission={0.4}
+          thickness={1.5}
+          ior={1.4}
+          envMapIntensity={1.2}
+        />
       </mesh>
       {[0.3, 0.55, 0.8].map((fraction, index) => (
         <mesh key={index} position={[0, height * fraction, depth / 2 + 0.02]}>
@@ -221,7 +231,15 @@ function CentralTower() {
         <group key={index} position={[0, segment.y, 0]}>
           <mesh position={[0, segment.height / 2, 0]} castShadow>
             <boxGeometry args={[segment.width, segment.height, segment.depth]} />
-            <meshStandardMaterial color="#EAD9B8" roughness={0.7} />
+            <meshPhysicalMaterial
+              color="#EAF4FF"
+              roughness={0.08}
+              metalness={0.25}
+              transmission={0.55}
+              thickness={2}
+              ior={1.45}
+              envMapIntensity={1.4}
+            />
           </mesh>
           {(['+x', '-x', '+z', '-z'] as const).map((face) => {
             const isXFace = face.includes('x');
@@ -456,6 +474,149 @@ function MallDistrict() {
   );
 }
 
+const ROUTE_HEIGHT = 5;
+const ROUTE_ARC_POINTS = 24;
+
+function stationPosition(id: string): THREE.Vector3 {
+  const station = STATIONS.find((entry) => entry.id === id);
+  return new THREE.Vector3(...(station?.position ?? [0, 0, 0]));
+}
+
+function buildArcPoints(fromId: string, toId: string): THREE.Vector3[] {
+  const start = stationPosition(fromId).setY(1.5);
+  const end = stationPosition(toId).setY(1.5);
+  const mid = start.clone().add(end).multiplyScalar(0.5);
+  mid.y = ROUTE_HEIGHT;
+  return new THREE.QuadraticBezierCurve3(start, mid, end).getPoints(ROUTE_ARC_POINTS);
+}
+
+const ROUTE_DEFS: Array<{ id: string; pairs: Array<[string, string]>; color: string }> = [
+  { id: 'customer', pairs: [['CUSTOMER_STORE', 'CUSTOMER_EXPRESS']], color: '#22d3ee' },
+  {
+    id: 'agent',
+    pairs: [
+      ['AGENT_DISPATCH', 'AGENT_VERIFY'],
+      ['AGENT_VERIFY', 'AGENT_DROPOFF'],
+    ],
+    color: '#34d399',
+  },
+];
+
+/**
+ * Animated glowing delivery routes: curved cyan/emerald arcs (bright,
+ * unlit, toneMapped=false so Environment.tsx's Bloom picks them up) linking
+ * each role's waypoints, with a scrolling dash pattern (dashOffset animated
+ * every frame) so the route visibly "flows" toward its destination and a
+ * slow opacity pulse for a breathing glow.
+ */
+function DeliveryRoutes() {
+  const routes = useMemo(
+    () =>
+      ROUTE_DEFS.flatMap((route) =>
+        route.pairs.map(([from, to], index) => ({
+          key: `${route.id}-${index}`,
+          points: buildArcPoints(from, to),
+          color: route.color,
+        })),
+      ),
+    [],
+  );
+
+  return (
+    <>
+      {routes.map((route) => (
+        <GlowingRoute key={route.key} points={route.points} color={route.color} />
+      ))}
+    </>
+  );
+}
+
+function GlowingRoute({ points, color }: { points: THREE.Vector3[]; color: string }) {
+  const lineRef = useRef<Line2>(null);
+  const glowColor = useMemo(() => new THREE.Color(color).multiplyScalar(2.4), [color]);
+
+  useFrame((state, delta) => {
+    const material = lineRef.current?.material as LineMaterial | undefined;
+    if (!material) return;
+    material.dashOffset -= delta * 1.5;
+    material.opacity = 0.6 + Math.sin(state.clock.elapsedTime * 2.4) * 0.25;
+  });
+
+  return (
+    <Line
+      ref={lineRef}
+      points={points}
+      color={glowColor}
+      lineWidth={3}
+      dashed
+      dashSize={1.2}
+      gapSize={0.7}
+      transparent
+      opacity={0.8}
+      toneMapped={false}
+    />
+  );
+}
+
+const PIN_STATION_IDS = ['CUSTOMER_STORE', 'AGENT_VERIFY', 'AGENT_DROPOFF'] as const;
+const PIN_HEIGHT = 11;
+const PIN_COLORS: Record<string, string> = {
+  CUSTOMER_STORE: '#22d3ee',
+  AGENT_VERIFY: '#a855f7',
+  AGENT_DROPOFF: '#34d399',
+};
+
+/**
+ * Floating neon location pin hovering above a store hub / merchant test
+ * bench / drop-off point — bobs and slowly spins, and glows under Bloom via
+ * an overbright (>1 component) unlit color.
+ */
+function LocationPin({ position, color }: { position: [number, number, number]; color: string }) {
+  const bobRef = useRef<THREE.Group>(null);
+  const glow = useMemo(() => new THREE.Color(color).multiplyScalar(2.2), [color]);
+
+  useFrame((state) => {
+    if (!bobRef.current) return;
+    bobRef.current.position.y = PIN_HEIGHT + Math.sin(state.clock.elapsedTime * 1.6) * 0.5;
+    bobRef.current.rotation.y += 0.01;
+  });
+
+  return (
+    <group position={position}>
+      <group ref={bobRef}>
+        <mesh rotation={[Math.PI, 0, 0]}>
+          <coneGeometry args={[0.7, 1.4, 4]} />
+          <meshStandardMaterial color={glow} emissive={glow} emissiveIntensity={2.5} toneMapped={false} />
+        </mesh>
+        <mesh position={[0, 0.9, 0]}>
+          <sphereGeometry args={[0.5, 16, 16]} />
+          <meshStandardMaterial
+            color={glow}
+            emissive={glow}
+            emissiveIntensity={2.5}
+            toneMapped={false}
+            transparent
+            opacity={0.9}
+          />
+        </mesh>
+        <pointLight color={color} intensity={12} distance={16} decay={2} />
+      </group>
+    </group>
+  );
+}
+
+function LocationPins() {
+  return (
+    <>
+      {PIN_STATION_IDS.map((id) => {
+        const station = STATIONS.find((entry) => entry.id === id);
+        if (!station) return null;
+        return <LocationPin key={id} position={station.position} color={PIN_COLORS[id]} />;
+      })}
+    </>
+  );
+}
+
 /**
  * Downtown Dubai-inspired dense city layout: a Burj Khalifa-style central
  * tower ringed by a curved boulevard, a Dubai Mall/Fountain district, and
@@ -470,6 +631,8 @@ export function World() {
       <CentralTower />
       <Boulevard />
       <MallDistrict />
+      <DeliveryRoutes />
+      <LocationPins />
 
       {PALM_TREES.map((tree, index) => (
         <PalmTree key={index} {...tree} />

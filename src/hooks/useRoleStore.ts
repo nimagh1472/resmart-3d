@@ -14,6 +14,7 @@ import type {
   PresentationMode,
   RoleType,
   StoryRoleKey,
+  WalletTransaction,
 } from '@/types';
 
 const EXPRESS_ORDER_SECONDS = 118 * 60; // just under the 2-hour guarantee
@@ -23,8 +24,10 @@ const DROPOFF_BONUS = 12;
 const FEATURE_POPUP_LIFETIME_MS = 4200;
 const REWARD_POPUP_LIFETIME_MS = 2200;
 const CHAPTERS_PER_CAMPAIGN = 3;
+const TRANSACTION_HISTORY_LIMIT = 12;
 
 let nextPopupId = 1;
+let nextTransactionId = 1;
 
 interface RoleState {
   presentationMode: PresentationMode;
@@ -61,6 +64,10 @@ interface RoleState {
   // Business-feature HUD pop-ups
   shownFeatureKeys: BusinessFeatureKey[];
   featurePopupQueue: FeaturePopup[];
+
+  // Market Engine HUD — real-time ledger of every AED earned/saved event.
+  transactions: WalletTransaction[];
+  pushTransaction: (label: string, amount: number) => void;
 
   completeStation: (id: string) => void;
   setPresentationMode: (mode: PresentationMode) => void;
@@ -121,12 +128,22 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   shownFeatureKeys: [],
   featurePopupQueue: [],
 
+  transactions: [],
+  pushTransaction: (label, amount) =>
+    set((state) => ({
+      transactions: [
+        { id: nextTransactionId++, label, amount, timestamp: Date.now() },
+        ...state.transactions,
+      ].slice(0, TRANSACTION_HISTORY_LIMIT),
+    })),
+
   completeStation: (id) => {
     if (get().completedStations.includes(id)) return;
     set((state) => ({
       completedStations: [...state.completedStations, id],
       earnings: state.earnings + FINANCIAL_METRICS.netMarginPerOrder.value,
     }));
+    get().pushTransaction(`Station cleared: ${id.replace(/_/g, ' ')}`, FINANCIAL_METRICS.netMarginPerOrder.value);
 
     if (id === 'CUSTOMER_STORE') get().advanceChapter('CUSTOMER', 1);
     if (id === 'CUSTOMER_EXPRESS') {
@@ -169,6 +186,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
       collectedPickupIds: [...state.collectedPickupIds, id],
       customerWallet: state.customerWallet + amount,
     }));
+    get().pushTransaction('Cashback Gem collected', amount);
     if (isFirstEver) {
       get().pushFeaturePopup('CASHBACK_REWARDS');
     } else {
@@ -199,6 +217,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     if (get().agentOrderStage !== 'DISPATCHED') return 0;
     const fee = randomInRange(VERIFICATION_FEE_MIN, VERIFICATION_FEE_MAX);
     set((state) => ({ agentOrderStage: 'VERIFIED', driverEarnings: state.driverEarnings + fee }));
+    get().pushTransaction('Merchant test fee', fee);
     get().advanceChapter('AGENT', 2);
     return fee;
   },
@@ -206,6 +225,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
   completeDropoff: () => {
     if (get().agentOrderStage !== 'VERIFIED') return 0;
     set((state) => ({ agentOrderStage: 'IDLE', driverEarnings: state.driverEarnings + DROPOFF_BONUS }));
+    get().pushTransaction('Delivery bonus', DROPOFF_BONUS);
     get().advanceChapter('AGENT', 3);
     get().completeCampaign('AGENT');
     return DROPOFF_BONUS;

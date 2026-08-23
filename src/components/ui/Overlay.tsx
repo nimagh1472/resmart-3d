@@ -8,6 +8,7 @@ import { useRoleStore } from '@/hooks/useRoleStore';
 import { useSound } from '@/hooks/useSound';
 import type { PresentationMode, RoleType, StoryRoleKey } from '@/types';
 import { MiniMap } from '@/components/ui/MiniMap';
+import { MarketEngineHUD } from '@/components/ui/MarketEngineHUD';
 
 // nipplejs (used by TouchControls) touches `window` as a module-level side
 // effect, which crashes Next's server-side prerendering — load it client-only.
@@ -71,40 +72,40 @@ export function Overlay() {
   return (
     <>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex flex-wrap items-start justify-between gap-2 p-4">
-        <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-neutral-800 shadow">
-          <Sparkles size={14} className="text-purple-600" />
-          <span className="font-semibold text-neutral-900">ReSmart AI</span>
-          <span className="text-neutral-300">|</span>
-          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-cyan-400/20 bg-neutral-950/75 px-4 py-2 text-sm font-medium text-neutral-100 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
+          <Sparkles size={14} className="text-purple-400" />
+          <span className="font-semibold text-white">ReSmart AI</span>
+          <span className="text-white/10">|</span>
+          <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-neutral-300">
             {getRoleLabel(activeRole, presentationMode)}
           </span>
           {chapterIndex !== null && (
             <>
-              <span className="text-neutral-300">|</span>
-              <span>Chapter {Math.min(chapterIndex + 1, 3)} / 3</span>
+              <span className="text-white/10">|</span>
+              <span className="text-neutral-300">Chapter {Math.min(chapterIndex + 1, 3)} / 3</span>
             </>
           )}
-          <span className="text-neutral-300">|</span>
-          <span>
+          <span className="text-white/10">|</span>
+          <span className="text-emerald-300">
             {isAgent ? currencyFormatter.format(driverEarnings) : currencyFormatter.format(customerWallet)}
-            {isAgent ? ' earned' : ' wallet'}
+            <span className="text-neutral-400">{isAgent ? ' earned' : ' wallet'}</span>
           </span>
           {(isCustomer || isAgent) && activeOrderCountdownSeconds !== null && (
             <>
-              <span className="text-neutral-300">|</span>
-              <span className="font-semibold text-green-600">ETA {formatCountdown(activeOrderCountdownSeconds)}</span>
+              <span className="text-white/10">|</span>
+              <span className="font-semibold text-green-400">ETA {formatCountdown(activeOrderCountdownSeconds)}</span>
             </>
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-white/90 p-1 shadow">
+        <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-cyan-400/20 bg-neutral-950/75 p-1 shadow-2xl shadow-cyan-500/10 backdrop-blur-xl">
           <button
             onClick={() => setPresentationMode('INTERACTIVE')}
             className={clsx(
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
               presentationMode === 'INTERACTIVE'
-                ? 'bg-neutral-900 text-white'
-                : 'text-neutral-600 hover:bg-neutral-100',
+                ? 'bg-cyan-500/90 text-neutral-950'
+                : 'text-neutral-300 hover:bg-white/10',
             )}
           >
             <Car size={14} />
@@ -115,8 +116,8 @@ export function Overlay() {
             className={clsx(
               'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition',
               presentationMode === 'CINEMATIC'
-                ? 'bg-neutral-900 text-white'
-                : 'text-neutral-600 hover:bg-neutral-100',
+                ? 'bg-cyan-500/90 text-neutral-950'
+                : 'text-neutral-300 hover:bg-white/10',
             )}
           >
             <Clapperboard size={14} />
@@ -125,20 +126,21 @@ export function Overlay() {
           <button
             onClick={toggleAudio}
             aria-label={isAudioEnabled ? 'Mute audio' : 'Unmute audio'}
-            className="flex items-center rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100"
+            className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
           >
             {isAudioEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
           </button>
           <button
             onClick={() => setQuickDeckOpen(true)}
             aria-label="Open pitch deck PDF"
-            className="flex items-center rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100"
+            className="flex items-center rounded-full p-2 text-neutral-300 transition hover:bg-white/10"
           >
             <FileText size={14} />
           </button>
         </div>
       </div>
 
+      <MarketEngineHUD />
       <MiniMap />
       <TouchControls />
     </>

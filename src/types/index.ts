@@ -84,3 +84,10 @@ export interface VehicleControlsState {
   turn: number;
   boost: boolean;
 }
+
+export interface WalletTransaction {
+  id: number;
+  label: string;
+  amount: number;
+  timestamp: number;
+}

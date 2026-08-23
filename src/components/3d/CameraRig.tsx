@@ -14,10 +14,10 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 10, 16);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 25, 40);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
 const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
-const MIN_HEIGHT_ABOVE_VEHICLE = 5;
+const MIN_HEIGHT_ABOVE_VEHICLE = 8;
 
 /**
  * Converts a per-second exponential-approach "response" rate into the

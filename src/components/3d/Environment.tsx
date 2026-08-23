@@ -1,43 +1,60 @@
 'use client';
 
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
-import { Color } from 'three';
+import { Color, type PlaneGeometry } from 'three';
+import { WORLD_BOUNDS } from '@/lib/pitchData';
 
-const SSAO_SHADOW_COLOR = new Color('#3a2c1d');
+const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
+
+const SKY_COLOR = '#D8E5ED';
+const FOG_COLOR = '#D8E5ED';
+const FOG_DENSITY = 0.002;
+
+const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
+const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
+const WATER_DEPTH = 160;
 
 interface EnvironmentProps {
   isMobile: boolean;
 }
 
 /**
- * Bruno Simon-style bright clay/toy lighting rig: a soft pastel sky, warm
- * directional "sunlight" casting dynamic shadows, and gentle ambient/
- * hemisphere fill so nothing reads as pitch black. Postprocessing (SSAO
- * contact shadows + a subtle bloom on emissive accents) only runs on
+ * Photorealistic Downtown Dubai lighting rig: a bright coastal-blue sky,
+ * crisp high-resolution sunlight casting dynamic shadows, subtle atmospheric
+ * fog matching the sky color, and a rippling coastal water plane standing in
+ * for Dubai Creek/the waterfront beyond the drivable area. Postprocessing
+ * (SSAO contact shadows + bloom on emissive/glass accents) only runs on
  * desktop — both are relatively expensive per-pixel passes.
  */
 export function Environment({ isMobile }: EnvironmentProps) {
   return (
     <>
-      <color attach="background" args={['#BEE3F8']} />
+      <color attach="background" args={[SKY_COLOR]} />
 
-      <hemisphereLight args={['#FFF8E7', '#E5DDCB', 0.6]} />
-      <ambientLight intensity={0.8} color="#FFF8E7" />
+      <hemisphereLight args={['#EAF4FF', '#B7C7CE', 0.55]} />
+      <ambientLight intensity={0.55} color="#EAF4FF" />
 
       <directionalLight
         castShadow={!isMobile}
-        position={[30, 50, 30]}
-        intensity={1.2}
-        color="#FFF3D6"
-        shadow-mapSize={[2048, 2048]}
-        shadow-camera-left={-100}
-        shadow-camera-right={100}
-        shadow-camera-top={100}
-        shadow-camera-bottom={-100}
-        shadow-bias={-0.0004}
+        position={[50, 80, 50]}
+        intensity={1.5}
+        color="#FFFBEF"
+        shadow-mapSize={isMobile ? [1024, 1024] : [4096, 4096]}
+        shadow-camera-left={-120}
+        shadow-camera-right={120}
+        shadow-camera-top={120}
+        shadow-camera-bottom={-120}
+        shadow-camera-near={1}
+        shadow-camera-far={260}
+        shadow-bias={-0.0003}
+        shadow-normalBias={0.02}
       />
 
-      <fog attach="fog" args={['#BEE3F8', 90, 260]} />
+      <fogExp2 attach="fog" args={[FOG_COLOR, FOG_DENSITY]} />
+
+      <CoastalWater isMobile={isMobile} />
 
       {!isMobile && (
         <EffectComposer multisampling={0}>
@@ -51,9 +68,62 @@ export function Environment({ isMobile }: EnvironmentProps) {
             worldProximityThreshold={1.5}
             worldProximityFalloff={0.5}
           />
-          <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.3} intensity={0.5} mipmapBlur />
+          <Bloom luminanceThreshold={0.75} luminanceSmoothing={0.3} intensity={0.65} mipmapBlur />
         </EffectComposer>
       )}
     </>
+  );
+}
+
+/**
+ * Dubai Creek/waterfront stand-in beyond the drivable WORLD_BOUNDS: a large
+ * plane whose vertices are rippled with layered sine waves each frame (CPU
+ * displacement, cheap at this segment count) for a realistic rolling-water
+ * look, with a glassy low-roughness material to pick up sky/sun reflections.
+ * Segment density (and the ripple animation itself) is reduced on mobile to
+ * keep the per-frame vertex loop cheap on weaker GPUs/CPUs.
+ */
+function CoastalWater({ isMobile }: { isMobile: boolean }) {
+  const geometryRef = useRef<PlaneGeometry>(null);
+  const basePositions = useRef<Float32Array | null>(null);
+  const segments = isMobile ? 16 : 56;
+
+  useFrame((state) => {
+    if (isMobile) return;
+    const geometry = geometryRef.current;
+    if (!geometry) return;
+
+    if (!basePositions.current) {
+      basePositions.current = Float32Array.from(geometry.attributes.position.array);
+    }
+
+    const position = geometry.attributes.position;
+    const base = basePositions.current;
+    const t = state.clock.elapsedTime;
+
+    for (let i = 0; i < position.count; i += 1) {
+      const x = base[i * 3];
+      const y = base[i * 3 + 1];
+      const wave =
+        Math.sin(x * 0.06 + t * 0.9) * 0.4 + Math.cos(y * 0.08 + t * 0.6) * 0.3 + Math.sin((x + y) * 0.04 + t * 0.4) * 0.2;
+      position.setZ(i, wave);
+    }
+
+    position.needsUpdate = true;
+    geometry.computeVertexNormals();
+  });
+
+  return (
+    <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry ref={geometryRef} args={[WATER_WIDTH, WATER_DEPTH, segments, segments]} />
+      <meshStandardMaterial
+        color="#1c6fa6"
+        roughness={0.12}
+        metalness={0.6}
+        transparent
+        opacity={0.88}
+        envMapIntensity={1.3}
+      />
+    </mesh>
   );
 }
