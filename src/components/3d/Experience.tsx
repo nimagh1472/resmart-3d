@@ -72,7 +72,7 @@ export function Experience() {
     <Canvas
       key={canvasKey}
       shadows={isMobile ? false : 'soft'}
-      camera={{ position: [20, 18, 20], fov: 34, near: 1, far: 300 }}
+      camera={{ position: [20, 18, 20], fov: 45, near: 0.5, far: 600 }}
       dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)}
       gl={{
         toneMapping: ACESFilmicToneMapping,

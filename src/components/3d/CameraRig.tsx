@@ -15,9 +15,11 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(20, 18, 20);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 12, 28);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
-const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
+// Ahead-and-up of the vehicle (rather than dead-on) so the look target sits
+// between the car and the skyline, keeping full building height in frame.
+const LOOK_AT_OFFSET = new THREE.Vector3(0, 8, 20);
 const MIN_HEIGHT_ABOVE_VEHICLE = 8;
 
 /**
@@ -62,8 +64,8 @@ const ROTATION_RESPONSE: Record<PresentationMode, number> = {
 
 // Nitro boost FOV kick: widening the lens while boosting reads as speed
 // without touching the chase-cam offsets above.
-const BASE_FOV = 34;
-const BOOST_FOV = 48;
+const BASE_FOV = 45;
+const BOOST_FOV = 58;
 const FOV_RESPONSE = 4;
 
 /**
@@ -102,6 +104,7 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
   const vehicleQuaternion = useRef(new THREE.Quaternion());
   const guidedZoneTarget = useRef(new THREE.Vector3());
   const offsetScratch = useRef(new THREE.Vector3());
+  const lookOffsetScratch = useRef(new THREE.Vector3());
 
   useFrame((_, delta) => {
     const vehicle = vehicleRef.current;
@@ -148,7 +151,8 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       const offsetPreset = presentationMode === 'GUIDED' ? GUIDED_OFFSET : INTERACTIVE_OFFSET;
       const offset = offsetScratch.current.copy(offsetPreset).applyQuaternion(vehicleQuaternion.current);
       desiredPosition.current.copy(vehiclePosition.current).add(offset);
-      lookTarget.current.copy(vehiclePosition.current).add(LOOK_AT_OFFSET);
+      const lookOffset = lookOffsetScratch.current.copy(LOOK_AT_OFFSET).applyQuaternion(vehicleQuaternion.current);
+      lookTarget.current.copy(vehiclePosition.current).add(lookOffset);
 
       // GUIDED: auto-navigate the look target toward the nearest incomplete
       // pitch station's "optimal angle" as the vehicle approaches it, without
