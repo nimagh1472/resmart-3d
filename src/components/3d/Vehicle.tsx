@@ -16,6 +16,20 @@ const TURN_RATE = 2.2; // rad/sec
 const VEHICLE_HALF_WIDTH = 1.5;
 const SPAWN_HEIGHT = 0.6;
 
+// Smoothing rates (per second) for the "premium" lerp-driven feel: how
+// quickly current speed/turn converge toward the raw input target, and how
+// quickly the purely-visual body-roll/pitch tilt converges toward its target.
+const SPEED_RESPONSE = 4.5;
+const TURN_RESPONSE = 6;
+const TILT_RESPONSE = 5;
+const MAX_ROLL = 0.22; // radians of bank into a turn
+const MAX_PITCH = 0.09; // radians of nose dip/lift under accel/brake
+
+/** Exponential approach of `current` toward `target`, framerate-independent. */
+function damp(current: number, target: number, response: number, delta: number): number {
+  return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-response * delta));
+}
+
 interface VehicleProps {
   isMobile: boolean;
 }
@@ -44,6 +58,18 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const position = useRef(new THREE.Vector3(0, SPAWN_HEIGHT, 0));
   const rotationY = useRef(0);
   const quaternion = useRef(new THREE.Quaternion());
+  const upAxis = useRef(new THREE.Vector3(0, 1, 0));
+
+  // Smoothed (lerped) speed/turn so accel/steering ease in rather than
+  // snapping instantly to raw input, plus a purely-visual tilt group (body
+  // roll into turns, suspension pitch under accel/braking) layered on top of
+  // the flat kinematic transform the RigidBody/collider actually uses.
+  const currentSpeed = useRef(0);
+  const previousSpeed = useRef(0);
+  const currentTurnRate = useRef(0);
+  const currentRoll = useRef(0);
+  const currentPitch = useRef(0);
+  const tiltGroupRef = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
     const rigidBody = rigidBodyRef.current;
@@ -54,11 +80,17 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     const turnInput = inputEnabled ? controlsState.turn : 0;
     const boost = inputEnabled && controlsState.boost;
 
-    const speed = forwardInput * MAX_SPEED * speedBoostMultiplier * (boost ? BOOST_MULTIPLIER : 1);
-    rotationY.current += turnInput * TURN_RATE * delta * (forwardInput < 0 ? -1 : 1);
+    const targetSpeed = forwardInput * MAX_SPEED * speedBoostMultiplier * (boost ? BOOST_MULTIPLIER : 1);
+    const targetTurnRate = turnInput * TURN_RATE * (forwardInput < 0 ? -1 : 1);
 
-    const nextX = position.current.x + Math.sin(rotationY.current) * speed * delta;
-    const nextZ = position.current.z + Math.cos(rotationY.current) * speed * delta;
+    previousSpeed.current = currentSpeed.current;
+    currentSpeed.current = damp(currentSpeed.current, targetSpeed, SPEED_RESPONSE, delta);
+    currentTurnRate.current = damp(currentTurnRate.current, targetTurnRate, TURN_RESPONSE, delta);
+
+    rotationY.current += currentTurnRate.current * delta;
+
+    const nextX = position.current.x + Math.sin(rotationY.current) * currentSpeed.current * delta;
+    const nextZ = position.current.z + Math.cos(rotationY.current) * currentSpeed.current * delta;
 
     position.current.x = Math.min(
       WORLD_BOUNDS.maxX - VEHICLE_HALF_WIDTH,
@@ -69,13 +101,28 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
       Math.max(WORLD_BOUNDS.minZ + VEHICLE_HALF_WIDTH, nextZ),
     );
 
-    quaternion.current.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationY.current);
+    quaternion.current.setFromAxisAngle(upAxis.current, rotationY.current);
 
     rigidBody.setNextKinematicTranslation(position.current);
     rigidBody.setNextKinematicRotation(quaternion.current);
 
     vehicleTelemetry.x = position.current.x;
     vehicleTelemetry.z = position.current.z;
+
+    // Visual-only body-roll (bank into turns) and suspension pitch (nose
+    // dips under acceleration, lifts under braking) — never touches the
+    // RigidBody transform above, so collision bounds stay flat/predictable.
+    const targetRoll = THREE.MathUtils.clamp(-currentTurnRate.current / TURN_RATE, -1, 1) * MAX_ROLL;
+    const speedDelta = delta > 0 ? (currentSpeed.current - previousSpeed.current) / delta : 0;
+    const targetPitch = THREE.MathUtils.clamp(-speedDelta / (MAX_SPEED * BOOST_MULTIPLIER), -1, 1) * MAX_PITCH;
+
+    currentRoll.current = damp(currentRoll.current, targetRoll, TILT_RESPONSE, delta);
+    currentPitch.current = damp(currentPitch.current, targetPitch, TILT_RESPONSE, delta);
+
+    if (tiltGroupRef.current) {
+      tiltGroupRef.current.rotation.z = currentRoll.current;
+      tiltGroupRef.current.rotation.x = currentPitch.current;
+    }
   });
 
   const isAgent = activeRole === 'AGENT';
@@ -83,7 +130,9 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   return (
     <RigidBody ref={rigidBodyRef} type="kinematicPosition" colliders={false} position={[0, SPAWN_HEIGHT, 0]}>
       <CuboidCollider args={[1.1, 0.6, 1.9]} />
-      {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
+      <group ref={tiltGroupRef}>
+        {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
+      </group>
     </RigidBody>
   );
 });

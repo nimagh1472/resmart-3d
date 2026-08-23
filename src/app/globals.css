@@ -40,3 +40,24 @@ body {
     width: 100%;
   }
 }
+
+/* Drives FeaturePopupHUD.tsx's business-feature/reward pop-ups: an energetic
+   drop-and-settle entrance each time a fresh popup (keyed by its id) mounts. */
+@keyframes feature-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.92);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.03);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-feature-pop {
+  animation: feature-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}

@@ -1,12 +1,13 @@
 'use client';
 
+import { useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import clsx from 'clsx';
 import { Car, Clapperboard, FileText, Sparkles, Volume2, VolumeX } from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useSound } from '@/hooks/useSound';
-import { ZONES } from '@/lib/pitchData';
-import type { PresentationMode, RoleType } from '@/types';
+import { CASHBACK_PICKUPS } from '@/lib/pitchData';
+import type { AgentOrderStage, PresentationMode, RoleType } from '@/types';
 import { MiniMap } from '@/components/ui/MiniMap';
 
 // nipplejs (used by TouchControls) touches `window` as a module-level side
@@ -22,10 +23,32 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
 });
 
 function getRoleLabel(activeRole: RoleType, presentationMode: PresentationMode): string {
-  if (activeRole === 'AGENT') return 'Agent';
+  if (activeRole === 'AGENT') return 'Driver';
   if (activeRole === 'CUSTOMER') return 'Customer';
   if (presentationMode === 'CINEMATIC') return 'Investor Tour';
   return 'Guest';
+}
+
+function getCustomerQuestProgress(completedStations: string[], collectedPickupIds: string[]): number {
+  let progress = 0;
+  if (completedStations.includes('CUSTOMER_STORE')) progress += 1;
+  if (collectedPickupIds.length >= CASHBACK_PICKUPS.length) progress += 1;
+  if (completedStations.includes('CUSTOMER_EXPRESS')) progress += 1;
+  return progress;
+}
+
+function getAgentQuestProgress(agentOrderStage: AgentOrderStage): number {
+  if (agentOrderStage === 'DISPATCHED') return 1;
+  if (agentOrderStage === 'VERIFIED') return 2;
+  return 0;
+}
+
+function formatCountdown(totalSeconds: number): string {
+  const minutes = Math.floor(totalSeconds / 60)
+    .toString()
+    .padStart(2, '0');
+  const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+  return `${minutes}:${seconds}`;
 }
 
 /**
@@ -39,14 +62,33 @@ export function Overlay() {
   const activeRole = useRoleStore((state) => state.activeRole);
   const setPresentationMode = useRoleStore((state) => state.setPresentationMode);
   const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
-  const completedZones = useRoleStore((state) => state.completedZones);
-  const earnings = useRoleStore((state) => state.earnings);
+  const completedStations = useRoleStore((state) => state.completedStations);
+  const collectedPickupIds = useRoleStore((state) => state.collectedPickupIds);
+  const agentOrderStage = useRoleStore((state) => state.agentOrderStage);
+  const customerWallet = useRoleStore((state) => state.customerWallet);
+  const driverEarnings = useRoleStore((state) => state.driverEarnings);
+  const activeOrderCountdownSeconds = useRoleStore((state) => state.activeOrderCountdownSeconds);
+  const tickOrderCountdown = useRoleStore((state) => state.tickOrderCountdown);
   const { isAudioEnabled, unlock, mute } = useSound();
+
+  useEffect(() => {
+    if (activeOrderCountdownSeconds === null) return;
+    const interval = setInterval(tickOrderCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [activeOrderCountdownSeconds, tickOrderCountdown]);
 
   const toggleAudio = () => {
     if (isAudioEnabled) mute();
     else unlock();
   };
+
+  const isCustomer = activeRole === 'CUSTOMER';
+  const isAgent = activeRole === 'AGENT';
+  const questProgress = isCustomer
+    ? getCustomerQuestProgress(completedStations, collectedPickupIds)
+    : isAgent
+      ? getAgentQuestProgress(agentOrderStage)
+      : null;
 
   return (
     <>
@@ -58,12 +100,23 @@ export function Overlay() {
           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
             {getRoleLabel(activeRole, presentationMode)}
           </span>
+          {questProgress !== null && (
+            <>
+              <span className="text-neutral-300">|</span>
+              <span>{questProgress} / 3 quests</span>
+            </>
+          )}
           <span className="text-neutral-300">|</span>
           <span>
-            {completedZones.length} / {ZONES.length} zones
+            {isAgent ? currencyFormatter.format(driverEarnings) : currencyFormatter.format(customerWallet)}
+            {isAgent ? ' earned' : ' wallet'}
           </span>
-          <span className="text-neutral-300">|</span>
-          <span>{currencyFormatter.format(earnings)}</span>
+          {isCustomer && activeOrderCountdownSeconds !== null && (
+            <>
+              <span className="text-neutral-300">|</span>
+              <span className="font-semibold text-green-600">ETA {formatCountdown(activeOrderCountdownSeconds)}</span>
+            </>
+          )}
         </div>
 
         <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-white/90 p-1 shadow">

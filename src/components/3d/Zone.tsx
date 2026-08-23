@@ -2,22 +2,29 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
+import type { Group, Mesh, MeshStandardMaterial } from 'three';
 import confetti from 'canvas-confetti';
-import type { Group, Mesh } from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { useRoleStore } from '@/hooks/useRoleStore';
-import { PITCH_METRICS } from '@/lib/pitchData';
-import type { ZoneDefinition } from '@/types';
+import { PITCH_METRICS, randomInRange } from '@/lib/pitchData';
+import { FacingText } from '@/components/3d/FacingText';
+import type { StationDefinition, StationId } from '@/types';
 
 interface ZoneProps {
-  zone: ZoneDefinition;
+  zone: StationDefinition;
   vehicleRef: React.RefObject<RapierRigidBody>;
 }
 
 const TRIGGER_RADIUS = 6;
 const EXPRESS_BOOST_MULTIPLIER = 2;
 const EXPRESS_BOOST_DURATION_MS = 5000;
+const HINT_VISIBLE_MS = 2200;
+
+// Stations that complete exactly once and stay completed (green beacon,
+// tracked via useRoleStore's completedStations). The three Agent-loop
+// stations are excluded — they're revisited every delivery cycle, gated by
+// agentOrderStage rather than a one-shot completion flag.
+const ONE_SHOT_STATION_IDS: StationId[] = ['CUSTOMER_STORE', 'CUSTOMER_EXPRESS', 'TRACTION_ASK'];
 
 function formatMetricValue(value: number | string): string {
   if (typeof value !== 'number') return value;
@@ -27,54 +34,125 @@ function formatMetricValue(value: number | string): string {
 }
 
 /**
- * A drivable pitch waypoint. Completes itself (once — completeZone is
- * idempotent per id, see useRoleStore) when the vehicle enters its trigger
- * radius, using simple distance checks rather than a physics collider,
- * matching the vehicle's own kinematic (non-dynamic) motion. Every piece of
- * displayed copy (title, caption, metric values/assumptions) is read
- * straight from lib/pitchData.ts — nothing here is hard-coded.
+ * A drivable pitch/quest waypoint. One-shot stations (CUSTOMER_STORE,
+ * CUSTOMER_EXPRESS, TRACTION_ASK) complete themselves once, the moment the
+ * vehicle enters their trigger radius, via useRoleStore's idempotent
+ * completeStation. The three Agent-loop stations (AGENT_DISPATCH,
+ * AGENT_VERIFY, AGENT_DROPOFF) are edge-triggered instead — they fire again
+ * every time the vehicle re-enters the radius, gated by agentOrderStage, so
+ * a Driver can repeat the dispatch -> verify -> drop-off loop endlessly.
  *
- * In GUIDED mode, the nearest incomplete zone (tracked in Zones.tsx and
- * exposed via useRoleStore's nearestZoneId) spins its beacon faster and
- * shows a bouncing arrow, so the UI visibly highlights the next waypoint
- * while CameraRig.tsx separately swings the camera toward it.
+ * In GUIDED mode, the nearest incomplete one-shot station spins its beacon
+ * faster and shows a bouncing arrow, so the UI visibly highlights the next
+ * waypoint while CameraRig.tsx separately swings the camera toward it.
  */
 export function Zone({ zone, vehicleRef }: ZoneProps) {
   const beaconRef = useRef<Group>(null);
   const arrowRef = useRef<Mesh>(null);
-  const isCompleted = useRoleStore((state) => state.completedZones.includes(zone.id));
-  const completeZone = useRoleStore((state) => state.completeZone);
+
+  const completedStations = useRoleStore((state) => state.completedStations);
+  const completeStation = useRoleStore((state) => state.completeStation);
   const activateSpeedBoost = useRoleStore((state) => state.activateSpeedBoost);
   const openLeadModal = useRoleStore((state) => state.openLeadModal);
   const presentationMode = useRoleStore((state) => state.presentationMode);
   const nearestZoneId = useRoleStore((state) => state.nearestZoneId);
+  const agentOrderStage = useRoleStore((state) => state.agentOrderStage);
+  const startExpressOrder = useRoleStore((state) => state.startExpressOrder);
+  const acceptDispatch = useRoleStore((state) => state.acceptDispatch);
+  const completeVerification = useRoleStore((state) => state.completeVerification);
+  const completeDropoff = useRoleStore((state) => state.completeDropoff);
+  const pushFeaturePopup = useRoleStore((state) => state.pushFeaturePopup);
+
+  const isOneShotStation = ONE_SHOT_STATION_IDS.includes(zone.id);
+  const isCompleted = isOneShotStation && completedStations.includes(zone.id);
   const hasFiredCompletionEffect = useRef(false);
+
+  const wasInsideRef = useRef(false);
+  const [hintText, setHintText] = useState<string | null>(null);
+  const hintTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isNearestWaypoint = presentationMode === 'GUIDED' && !isCompleted && nearestZoneId === zone.id;
 
   useFrame((state, delta) => {
-    const vehicle = vehicleRef.current;
     if (beaconRef.current) beaconRef.current.rotation.y += delta * (isNearestWaypoint ? 2.4 : 0.6);
     if (arrowRef.current) {
       arrowRef.current.visible = isNearestWaypoint;
       arrowRef.current.position.y = 8 + Math.sin(state.clock.elapsedTime * 3) * 0.4;
     }
 
-    if (!vehicle || isCompleted) return;
+    const vehicle = vehicleRef.current;
+    if (!vehicle) return;
 
     const vehiclePosition = vehicle.translation();
     const dx = vehiclePosition.x - zone.position[0];
     const dz = vehiclePosition.z - zone.position[2];
-    if (Math.sqrt(dx * dx + dz * dz) <= TRIGGER_RADIUS) {
-      completeZone(zone.id);
+    const isInside = Math.sqrt(dx * dx + dz * dz) <= TRIGGER_RADIUS;
+
+    if (isOneShotStation) {
+      if (!isCompleted && isInside) completeStation(zone.id);
+      return;
     }
+
+    if (isInside && !wasInsideRef.current) {
+      handleAgentStationEnter(zone.id);
+    }
+    wasInsideRef.current = isInside;
   });
 
+  function showHint(text: string) {
+    setHintText(text);
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    hintTimeoutRef.current = setTimeout(() => setHintText(null), HINT_VISIBLE_MS);
+  }
+
+  function handleAgentStationEnter(id: StationId) {
+    if (id === 'AGENT_DISPATCH') {
+      if (agentOrderStage !== 'IDLE') {
+        showHint('Order already in progress');
+        return;
+      }
+      acceptDispatch();
+      pushFeaturePopup('AGENT_EARNINGS', 'Order accepted — head to the Test Bench');
+      return;
+    }
+
+    if (id === 'AGENT_VERIFY') {
+      if (agentOrderStage !== 'DISPATCHED') {
+        showHint('Accept an order at the Pickup Station first');
+        return;
+      }
+      const fee = completeVerification();
+      pushFeaturePopup('AGENT_EARNINGS', `+$${fee.toFixed(0)} testing fee`);
+      return;
+    }
+
+    if (id === 'AGENT_DROPOFF') {
+      if (agentOrderStage !== 'VERIFIED') {
+        showHint('Verify the gadget at the Test Bench first');
+        return;
+      }
+      const bonus = completeDropoff();
+      confetti({
+        particleCount: 140,
+        spread: 80,
+        origin: { y: 0.6 },
+        colors: ['#22c55e', '#a855f7', '#7dd3fc'],
+      });
+      pushFeaturePopup('DELIVERY_GUARANTEE', `+$${bonus.toFixed(0)} delivery bonus`);
+    }
+  }
+
   useEffect(() => {
-    if (!isCompleted || hasFiredCompletionEffect.current) return;
+    if (!isOneShotStation || !isCompleted || hasFiredCompletionEffect.current) return;
     hasFiredCompletionEffect.current = true;
 
-    if (zone.id === 'EXPRESS_DELIVERY') {
+    if (zone.id === 'CUSTOMER_STORE') {
+      const savings = randomInRange(8, 40);
+      pushFeaturePopup('AI_COMPARISON', `Found a deal $${savings.toFixed(0)} cheaper`);
+    }
+
+    if (zone.id === 'CUSTOMER_EXPRESS') {
+      startExpressOrder();
       activateSpeedBoost(EXPRESS_BOOST_MULTIPLIER, EXPRESS_BOOST_DURATION_MS);
       confetti({
         particleCount: 140,
@@ -82,15 +160,16 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
         origin: { y: 0.6 },
         colors: ['#22c55e', '#a855f7', '#7dd3fc'],
       });
-      openLeadModal('zone3_express_delivery_complete');
+      pushFeaturePopup('DELIVERY_GUARANTEE', 'Order placed — arriving in under 2 hours');
+      openLeadModal('customer_express_checkout_complete');
     }
-  }, [isCompleted, zone.id, activateSpeedBoost, openLeadModal]);
+  }, [isCompleted, isOneShotStation, zone.id, activateSpeedBoost, openLeadModal, pushFeaturePopup, startExpressOrder]);
 
-  const color = isCompleted ? '#22c55e' : '#3b82f6';
+  const color = getStationColor(zone.id, isCompleted, agentOrderStage);
 
   return (
     <group position={zone.position}>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} onClick={() => completeZone(zone.id)}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} onClick={() => isOneShotStation && completeStation(zone.id)}>
         <circleGeometry args={[TRIGGER_RADIUS, 32]} />
         <meshStandardMaterial color={color} transparent opacity={0.35} />
       </mesh>
@@ -102,32 +181,53 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
         </mesh>
       </group>
 
-      {/* GUIDED-mode waypoint highlight: a bouncing arrow over the nearest incomplete zone */}
+      {/* GUIDED-mode waypoint highlight: a bouncing arrow over the nearest incomplete station */}
       <mesh ref={arrowRef} position={[0, 8, 0]} rotation={[Math.PI, 0, 0]} visible={false}>
         <coneGeometry args={[0.5, 1, 6]} />
         <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={2.5} toneMapped={false} />
       </mesh>
 
-      <Text position={[0, 6.6, 0]} fontSize={1.1} color="#f8fafc" anchorX="center" anchorY="middle">
+      <FacingText position={[0, 6.6, 0]} fontSize={1.1} color="#f8fafc" anchorX="center" anchorY="middle">
         {zone.title}
-      </Text>
-      <Text position={[0, 5.3, 0]} fontSize={0.45} color="#cbd5e1" anchorX="center" anchorY="middle" maxWidth={11}>
+      </FacingText>
+      <FacingText position={[0, 5.3, 0]} fontSize={0.45} color="#cbd5e1" anchorX="center" anchorY="middle" maxWidth={11}>
         {zone.investorPitchLine.text}
-      </Text>
+      </FacingText>
+
+      {hintText && (
+        <FacingText position={[0, 4.2, 0]} fontSize={0.4} color="#facc15" anchorX="center" anchorY="middle" maxWidth={10}>
+          {hintText}
+        </FacingText>
+      )}
 
       <ZoneFeature zone={zone} />
     </group>
   );
 }
 
-function ZoneFeature({ zone }: { zone: ZoneDefinition }) {
+function getStationColor(
+  id: StationId,
+  isCompleted: boolean,
+  agentOrderStage: 'IDLE' | 'DISPATCHED' | 'VERIFIED',
+): string {
+  if (id === 'AGENT_DISPATCH') return agentOrderStage === 'IDLE' ? '#3b82f6' : '#475569';
+  if (id === 'AGENT_VERIFY') return agentOrderStage === 'DISPATCHED' ? '#3b82f6' : '#475569';
+  if (id === 'AGENT_DROPOFF') return agentOrderStage === 'VERIFIED' ? '#3b82f6' : '#475569';
+  return isCompleted ? '#22c55e' : '#3b82f6';
+}
+
+function ZoneFeature({ zone }: { zone: StationDefinition }) {
   switch (zone.id) {
-    case 'AI_SEARCH':
+    case 'CUSTOMER_STORE':
       return <HolographicSearchLens />;
-    case 'VERIFIED_AGENT':
+    case 'AGENT_VERIFY':
       return <MerchantTestBench />;
-    case 'EXPRESS_DELIVERY':
+    case 'CUSTOMER_EXPRESS':
       return <ExpressDeliveryRamp />;
+    case 'AGENT_DISPATCH':
+      return <DispatchKiosk />;
+    case 'AGENT_DROPOFF':
+      return <SpeedRamp />;
     case 'TRACTION_ASK':
       return <TractionBillboards metricKeys={zone.metricKeys} />;
     default:
@@ -135,7 +235,7 @@ function ZoneFeature({ zone }: { zone: ZoneDefinition }) {
   }
 }
 
-/** Zone 1 — AI Vision Search: a spinning holographic lens scanning three
+/** Quest 1 (Customer) — AI Vision Search: a spinning holographic lens scanning three
  * price pedestals, the shortest (cheapest) one glowing as the winner. */
 function HolographicSearchLens() {
   const ringRef = useRef<Group>(null);
@@ -192,7 +292,7 @@ function HolographicSearchLens() {
   );
 }
 
-/** Zone 2 — Certified Refurbished Merchant Station: a test bench with a
+/** Quest 2 (Agent) — Certified Refurbished Merchant Station: a test bench with a
  * sweeping inspection scan-line and a rotating "certified" badge ring. */
 function MerchantTestBench() {
   const scanRef = useRef<Mesh>(null);
@@ -236,9 +336,50 @@ function MerchantTestBench() {
   );
 }
 
-/** Zone 3 — 2-Hour Express Delivery Ramp: a stunt ramp plus a glowing
- * countdown billboard ticking down from 120:00. Completing this zone also
- * opens the lead-capture modal (see the completion useEffect above). */
+/** Quest 1 (Agent) — Pickup Station: a dispatch kiosk with a blinking "new order" ticket. */
+function DispatchKiosk() {
+  const ticketRef = useRef<Mesh>(null);
+
+  useFrame((state) => {
+    if (ticketRef.current) {
+      const material = ticketRef.current.material as MeshStandardMaterial | undefined;
+      const pulse = 1.5 + Math.sin(state.clock.elapsedTime * 4) * 1.2;
+      if (material) material.emissiveIntensity = pulse;
+    }
+  });
+
+  return (
+    <group position={[0, 0, -4]}>
+      <mesh position={[0, 1, 0]} castShadow>
+        <boxGeometry args={[1.2, 2, 0.6]} />
+        <meshStandardMaterial color="#1e293b" />
+      </mesh>
+      <mesh position={[0, 2.1, 0.32]}>
+        <planeGeometry args={[0.9, 0.6]} />
+        <meshStandardMaterial color="#0f172a" />
+      </mesh>
+      <mesh ref={ticketRef} position={[0, 2.1, 0.34]}>
+        <planeGeometry args={[0.7, 0.4]} />
+        <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={1.5} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+/** Quest 3 (Agent) — Express Drop-off: a speed ramp finish line. */
+function SpeedRamp() {
+  return (
+    <group position={[0, 0, -6]}>
+      <mesh position={[0, 1, 4]} rotation={[Math.PI / 10, 0, 0]} castShadow>
+        <boxGeometry args={[4, 0.4, 8]} />
+        <meshStandardMaterial color="#14532d" />
+      </mesh>
+    </group>
+  );
+}
+
+/** Quest 3 (Customer) — 2-Hour Express Pickup Ramp: a stunt ramp plus a glowing
+ * countdown billboard ticking down under the delivery-guarantee SLA. */
 function ExpressDeliveryRamp() {
   return (
     <group position={[0, 0, -6]}>
@@ -252,7 +393,7 @@ function ExpressDeliveryRamp() {
 }
 
 function CountdownBillboard() {
-  const TOTAL_SECONDS = 120 * 60;
+  const TOTAL_SECONDS = 118 * 60; // just under the 2-hour delivery guarantee
   const [secondsRemaining, setSecondsRemaining] = useState(TOTAL_SECONDS);
 
   useEffect(() => {
@@ -273,16 +414,15 @@ function CountdownBillboard() {
         <boxGeometry args={[4, 2, 0.2]} />
         <meshStandardMaterial color="#0f172a" />
       </mesh>
-      <Text position={[0, 0, 0.15]} fontSize={0.9} color="#22c55e" anchorX="center" anchorY="middle">
+      <FacingText position={[0, 0, 0.15]} fontSize={0.9} color="#22c55e" anchorX="center" anchorY="middle">
         {`${minutes}:${seconds}`}
-      </Text>
+      </FacingText>
     </group>
   );
 }
 
-/** Zone 4 — Pitch & Traction Hub: a cluster of neon billboards, one per
- * zone.metricKeys entry, each pulling label/value/assumption from
- * PITCH_METRICS. */
+/** Traction Hub — a cluster of neon billboards, one per zone.metricKeys entry, each
+ * pulling label/value/assumption from PITCH_METRICS. */
 function TractionBillboards({ metricKeys }: { metricKeys: string[] }) {
   const spacing = 4.2;
   const startX = -((metricKeys.length - 1) * spacing) / 2;
@@ -299,7 +439,7 @@ function TractionBillboards({ metricKeys }: { metricKeys: string[] }) {
               <boxGeometry args={[3.4, 2.6, 0.2]} />
               <meshStandardMaterial color="#0f172a" />
             </mesh>
-            <Text
+            <FacingText
               position={[0, 0.8, 0.15]}
               fontSize={0.3}
               color="#a855f7"
@@ -309,11 +449,11 @@ function TractionBillboards({ metricKeys }: { metricKeys: string[] }) {
               textAlign="center"
             >
               {metric.label}
-            </Text>
-            <Text position={[0, 0.15, 0.15]} fontSize={0.55} color="#22c55e" anchorX="center" anchorY="middle">
+            </FacingText>
+            <FacingText position={[0, 0.15, 0.15]} fontSize={0.55} color="#22c55e" anchorX="center" anchorY="middle">
               {formatMetricValue(metric.value)}
-            </Text>
-            <Text
+            </FacingText>
+            <FacingText
               position={[0, -0.75, 0.15]}
               fontSize={0.18}
               color="#94a3b8"
@@ -323,7 +463,7 @@ function TractionBillboards({ metricKeys }: { metricKeys: string[] }) {
               textAlign="center"
             >
               {metric.assumption}
-            </Text>
+            </FacingText>
           </group>
         );
       })}

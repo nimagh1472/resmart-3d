@@ -8,14 +8,14 @@ import type { RoleType } from '@/types';
 const ROLE_OPTIONS: Array<{ role: Exclude<RoleType, null>; label: string; description: string; icon: typeof UserRound }> = [
   {
     role: 'CUSTOMER',
-    label: 'Play as Customer',
-    description: 'Explore how ReSmart AI finds and matches you with the right opportunity.',
+    label: 'Customer Mode',
+    description: 'Hunt AI-matched deals, collect cashback around the city, and checkout with a 2-hour delivery guarantee.',
     icon: UserRound,
   },
   {
     role: 'AGENT',
-    label: 'Play as Agent',
-    description: 'See the market, the business model, and what the seed round unlocks.',
+    label: 'Driver Mode',
+    description: 'Dispatch orders, verify gadgets for a testing fee, and race the drop-off ramp to bank your earnings.',
     icon: Building2,
   },
 ];

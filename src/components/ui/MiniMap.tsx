@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { vehicleTelemetry } from '@/hooks/useVehicleTelemetry';
-import { WORLD_BOUNDS, ZONES } from '@/lib/pitchData';
+import { CASHBACK_PICKUPS, STATIONS, WORLD_BOUNDS } from '@/lib/pitchData';
 
 const MAP_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX;
 const MAP_DEPTH = WORLD_BOUNDS.maxZ - WORLD_BOUNDS.minZ;
@@ -20,11 +20,12 @@ const VEHICLE_MARKER_RADIUS = 3;
  * triggers a re-render.
  */
 export function MiniMap() {
-  const completedZones = useRoleStore((state) => state.completedZones);
+  const completedStations = useRoleStore((state) => state.completedStations);
   const activeRole = useRoleStore((state) => state.activeRole);
+  const collectedPickupIds = useRoleStore((state) => state.collectedPickupIds);
   const vehicleMarkerRef = useRef<SVGCircleElement>(null);
 
-  const visibleZones = activeRole ? ZONES.filter((zone) => zone.visibleTo.includes(activeRole)) : ZONES;
+  const visibleStations = activeRole ? STATIONS.filter((station) => station.visibleTo.includes(activeRole)) : STATIONS;
 
   useEffect(() => {
     let frameId: number;
@@ -49,18 +50,29 @@ export function MiniMap() {
         className="h-full w-full"
         aria-hidden="true"
       >
-        {visibleZones.map((zone) => {
-          const isCompleted = completedZones.includes(zone.id);
+        {visibleStations.map((station) => {
+          const isCompleted = completedStations.includes(station.id);
           return (
             <circle
-              key={zone.id}
-              cx={zone.position[0]}
-              cy={zone.position[2]}
+              key={station.id}
+              cx={station.position[0]}
+              cy={station.position[2]}
               r={ZONE_MARKER_RADIUS}
               fill={isCompleted ? '#22c55e' : '#3b82f6'}
             />
           );
         })}
+        {activeRole === 'CUSTOMER' &&
+          CASHBACK_PICKUPS.map((pickup) => (
+            <circle
+              key={pickup.id}
+              cx={pickup.position[0]}
+              cy={pickup.position[2]}
+              r={ZONE_MARKER_RADIUS * 0.5}
+              fill="#facc15"
+              opacity={collectedPickupIds.includes(pickup.id) ? 0.2 : 1}
+            />
+          ))}
         <circle
           ref={vehicleMarkerRef}
           cx={0}

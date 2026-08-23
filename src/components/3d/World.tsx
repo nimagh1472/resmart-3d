@@ -1,7 +1,7 @@
 'use client';
 
-import { Text } from '@react-three/drei';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
+import { FacingText } from '@/components/3d/FacingText';
 
 interface BuildingConfig {
   position: [number, number, number];
@@ -81,9 +81,9 @@ function Billboard({ position, rotationY, label, color }: BillboardConfig) {
         <planeGeometry args={[8, 3.5]} />
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.4} toneMapped={false} />
       </mesh>
-      <Text position={[0, 8, 0.22]} fontSize={0.9} color="#0b0a1a" anchorX="center" anchorY="middle" maxWidth={7}>
+      <FacingText position={[0, 8, 0.22]} fontSize={0.9} color="#0b0a1a" anchorX="center" anchorY="middle" maxWidth={7}>
         {label}
-      </Text>
+      </FacingText>
       {[-4.2, 4.2].map((x, index) => (
         <mesh key={index} position={[x, 4, 0]}>
           <cylinderGeometry args={[0.3, 0.3, 8, 8]} />

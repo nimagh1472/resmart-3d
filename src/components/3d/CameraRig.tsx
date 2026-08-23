@@ -5,7 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { useRoleStore } from '@/hooks/useRoleStore';
-import { CINEMATIC_DWELL_SECONDS, ZONES } from '@/lib/pitchData';
+import { CINEMATIC_DWELL_SECONDS, STATIONS } from '@/lib/pitchData';
 import type { PresentationMode } from '@/types';
 
 interface CameraRigProps {
@@ -14,9 +14,10 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(0, 6, 12);
+const INTERACTIVE_OFFSET = new THREE.Vector3(0, 12, 18);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
-const LOOK_AT_OFFSET = new THREE.Vector3(0, 1.5, 0);
+const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
+const MIN_HEIGHT_ABOVE_VEHICLE = 6;
 
 // Overview shown before a vehicle exists or a role has been picked, so the
 // camera never defaults to an unframed/undefined view (e.g. pointing at the
@@ -55,7 +56,7 @@ const ROTATION_SMOOTHING: Record<PresentationMode, number> = {
  *   Zones.tsx).
  * - CINEMATIC: zero player input (see Vehicle.tsx) — the camera
  *   automatically orbits each pitch zone's predefined keyframe position in
- *   turn (see lib/pitchData.ts ZONES), advancing every
+ *   turn (see lib/pitchData.ts STATIONS), advancing every
  *   CINEMATIC_DWELL_SECONDS.
  * Because position and rotation are both lerped/slerped every frame rather
  * than snapped, switching modes always eases smoothly into the new target.
@@ -74,7 +75,8 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
 
   const desiredPosition = useRef(new THREE.Vector3(0, 15, 30));
   const lookTarget = useRef(new THREE.Vector3());
-  const lookHelper = useRef(new THREE.Object3D());
+  const lookMatrix = useRef(new THREE.Matrix4());
+  const desiredQuaternion = useRef(new THREE.Quaternion());
   const vehiclePosition = useRef(new THREE.Vector3());
   const vehicleQuaternion = useRef(new THREE.Quaternion());
   const guidedZoneTarget = useRef(new THREE.Vector3());
@@ -108,10 +110,10 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
 
       if (dwellElapsed.current >= CINEMATIC_DWELL_SECONDS) {
         dwellElapsed.current = 0;
-        setCinematicZoneIndex((cinematicZoneIndex + 1) % ZONES.length);
+        setCinematicZoneIndex((cinematicZoneIndex + 1) % STATIONS.length);
       }
 
-      const zone = ZONES[cinematicZoneIndex];
+      const zone = STATIONS[cinematicZoneIndex];
       const [zoneX, zoneY, zoneZ] = zone.position;
 
       desiredPosition.current.set(
@@ -129,20 +131,29 @@ export function CameraRig({ vehicleRef }: CameraRigProps) {
       // GUIDED: auto-navigate the look target toward the nearest incomplete
       // pitch station's "optimal angle" as the vehicle approaches it, without
       // taking control of the actual driving away from the player.
-      const guidedZone = presentationMode === 'GUIDED' && nearestZoneId ? ZONES.find((z) => z.id === nearestZoneId) : undefined;
+      const guidedZone = presentationMode === 'GUIDED' && nearestZoneId ? STATIONS.find((z) => z.id === nearestZoneId) : undefined;
       if (guidedZone) {
         guidedZoneTarget.current.set(...guidedZone.position);
         const distance = vehiclePosition.current.distanceTo(guidedZoneTarget.current);
         const revealWeight = THREE.MathUtils.clamp(1 - distance / GUIDED_REVEAL_RANGE, 0, 1) * GUIDED_REVEAL_STRENGTH;
         lookTarget.current.lerp(guidedZoneTarget.current, revealWeight);
       }
+
+      // Ground-clip guard: never let the camera sag below a safe height
+      // above the vehicle, even on ramps/inclines elsewhere in the world.
+      desiredPosition.current.y = Math.max(desiredPosition.current.y, vehiclePosition.current.y + MIN_HEIGHT_ABOVE_VEHICLE);
     }
 
     camera.position.lerp(desiredPosition.current, POSITION_SMOOTHING[presentationMode]);
 
-    lookHelper.current.position.copy(camera.position);
-    lookHelper.current.lookAt(lookTarget.current);
-    camera.quaternion.slerp(lookHelper.current.quaternion, ROTATION_SMOOTHING[presentationMode]);
+    // Built directly from Matrix4.lookAt (eye, target, up) rather than via a
+    // helper Object3D's own .lookAt(): Object3D (unlike Camera/Light) treats
+    // +Z as "forward", so a plain-Object3D helper produces an orientation
+    // that's backwards for a camera. Computing the matrix ourselves keeps
+    // the camera/light forward-is-"-Z" convention.
+    lookMatrix.current.lookAt(camera.position, lookTarget.current, camera.up);
+    desiredQuaternion.current.setFromRotationMatrix(lookMatrix.current);
+    camera.quaternion.slerp(desiredQuaternion.current, ROTATION_SMOOTHING[presentationMode]);
   });
 
   return null;

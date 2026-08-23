@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import { useRoleStore } from '@/hooks/useRoleStore';
-import { CINEMATIC_DWELL_SECONDS, ZONES } from '@/lib/pitchData';
+import { CINEMATIC_DWELL_SECONDS, STATIONS } from '@/lib/pitchData';
 
 /**
  * Letterbox bars, per-zone progress segments (Instagram-story style — the
@@ -28,7 +28,7 @@ export function CinematicBar() {
   const hasCompletedTour = useRef(false);
 
   useEffect(() => {
-    const justWrapped = previousZoneIndex.current === ZONES.length - 1 && cinematicZoneIndex === 0;
+    const justWrapped = previousZoneIndex.current === STATIONS.length - 1 && cinematicZoneIndex === 0;
     if (justWrapped && !hasCompletedTour.current) {
       hasCompletedTour.current = true;
       openLeadModal('cinematic_complete');
@@ -38,13 +38,13 @@ export function CinematicBar() {
 
   if (presentationMode !== 'CINEMATIC') return null;
 
-  const zone = ZONES[cinematicZoneIndex];
+  const zone = STATIONS[cinematicZoneIndex];
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col justify-between">
       <div className="flex h-[8vh] w-full flex-col justify-center gap-3 bg-black px-6">
         <div className="flex gap-1.5">
-          {ZONES.map((tourZone, index) => (
+          {STATIONS.map((tourZone, index) => (
             <div key={tourZone.id} className="h-1 flex-1 overflow-hidden rounded-full bg-white/20">
               <div
                 key={index === cinematicZoneIndex ? `active-${cinematicZoneIndex}` : `idle-${tourZone.id}`}
