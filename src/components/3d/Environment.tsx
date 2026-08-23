@@ -74,14 +74,14 @@ export function Environment({ isMobile }: EnvironmentProps) {
     <>
       <color attach="background" args={[SKY_COLOR]} />
 
-      <EnvironmentHDRI preset="city" background={false} />
-      <hemisphereLight args={['#bde3ff', '#3a2f28', 0.5]} />
+      <EnvironmentHDRI preset="city" background={false} environmentIntensity={0.4} />
+      <hemisphereLight args={['#bde3ff', '#3a2f28', 0.3]} />
 
       <directionalLight
         castShadow={!isMobile}
         position={[50, 80, 30]}
-        intensity={2.2}
-        color="#FFFBEF"
+        intensity={1.2}
+        color="#FFF5EA"
         shadow-mapSize={isMobile ? [1024, 1024] : [2048, 2048]}
         shadow-camera-left={-120}
         shadow-camera-right={120}

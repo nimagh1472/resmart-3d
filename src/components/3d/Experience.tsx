@@ -74,7 +74,7 @@ export function Experience() {
       shadows={!isMobile}
       camera={{ position: [18, 16, 18], fov: 32, near: 1, far: 300 }}
       dpr={isMobile ? [1, 1.25] : [1, 1.5]}
-      gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
+      gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 0.85 }}
       onCreated={handleCreated}
     >
       <Suspense fallback={null}>
