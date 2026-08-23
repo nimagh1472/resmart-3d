@@ -51,8 +51,6 @@ interface BuildingConfig {
   height: number;
   color: string;
   neonColor: string;
-  /** 'hero' = photoreal transmissive glass (landmarks); 'background' = cheaper opaque metallic glass (repeated filler). */
-  tier?: 'hero' | 'background';
 }
 
 interface BillboardConfig {
@@ -76,7 +74,7 @@ function buildEdge(axis: 'x' | 'z', sign: 1 | -1): BuildingConfig[] {
     const position: [number, number, number] =
       axis === 'z' ? [offset, 0, sign * EDGE_OFFSET] : [sign * EDGE_OFFSET, 0, offset];
 
-    return { position, width: 8, depth: 8, height, color, neonColor, tier: 'background' as const };
+    return { position, width: 8, depth: 8, height, color, neonColor };
   });
 }
 
@@ -86,6 +84,22 @@ const SKYLINE_BUILDINGS: BuildingConfig[] = [
   ...buildEdge('x', 1),
   ...buildEdge('x', -1),
 ];
+
+/** Groups the 20 skyline buildings by a shared key (body color or neon accent color) so each group can be rendered as a single InstancedMesh. */
+function groupSkylineBuildingsBy(key: 'color' | 'neonColor'): Array<{ key: string; buildings: BuildingConfig[] }> {
+  const groups = new Map<string, BuildingConfig[]>();
+  SKYLINE_BUILDINGS.forEach((building) => {
+    const groupKey = building[key];
+    const list = groups.get(groupKey);
+    if (list) list.push(building);
+    else groups.set(groupKey, [building]);
+  });
+  return Array.from(groups, ([groupKey, buildings]) => ({ key: groupKey, buildings }));
+}
+
+const SKYLINE_BODY_GROUPS = groupSkylineBuildingsBy('color');
+const SKYLINE_NEON_GROUPS = groupSkylineBuildingsBy('neonColor');
+const NEON_STRIP_HEIGHT_FRACTIONS = [0.3, 0.55, 0.8];
 
 const BILLBOARDS: BillboardConfig[] = [
   { position: [-12, 0, -20], rotationY: Math.PI * 0.15, label: 'RESMART AI', color: '#FF8FA3' },
@@ -103,7 +117,6 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 20,
     color: '#D4F1F9',
     neonColor: '#4ECDC4',
-    tier: 'hero',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 16, 0, MALL_DISTRICT_CENTER[2] - 14],
@@ -112,7 +125,6 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 16,
     color: '#C3E9F2',
     neonColor: '#FFD166',
-    tier: 'hero',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 4, 0, MALL_DISTRICT_CENTER[2] + 22],
@@ -121,7 +133,6 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     height: 12,
     color: '#B8E3ED',
     neonColor: '#FF8FA3',
-    tier: 'hero',
   },
 ];
 
@@ -189,16 +200,13 @@ const BARRIERS: RoadArrowConfig[] = [0, 1, 2, 3].flatMap((cardinal) => {
   }));
 });
 
-function Building({ position, width, depth, height, color, neonColor, tier = 'background' }: BuildingConfig) {
+/** Hero-tier landmark building (Mall District towers) — photoreal transmissive glass, drawn individually since there are only a few and each has a distinct color. The repeated skyline filler buildings use the instanced SkylineBuildings below instead. */
+function Building({ position, width, depth, height, color, neonColor }: BuildingConfig) {
   return (
     <group position={position}>
       <mesh position={[0, height / 2, 0]} castShadow={false}>
         <boxGeometry args={[width, height, depth]} />
-        {tier === 'hero' ? (
-          <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} color={color} />
-        ) : (
-          <meshStandardMaterial {...BACKGROUND_BUILDING_MATERIAL_PROPS} color={color} />
-        )}
+        <meshPhysicalMaterial {...GLASS_TOWER_MATERIAL_PROPS} color={color} />
       </mesh>
       {[0.3, 0.55, 0.8].map((fraction, index) => (
         <mesh key={index} position={[0, height * fraction, depth / 2 + 0.02]}>
@@ -211,6 +219,109 @@ function Building({ position, width, depth, height, color, neonColor, tier = 'ba
         <meshStandardMaterial color={neonColor} emissive={neonColor} emissiveIntensity={4} toneMapped={false} />
       </mesh>
     </group>
+  );
+}
+
+/**
+ * The 20 repeated skyline filler buildings ringing WORLD_BOUNDS, rendered as
+ * three InstancedMesh batches (bodies, neon strips, glow spheres) grouped by
+ * their shared body/neon color, instead of ~100 individual meshes (one
+ * <Building> per building x 5 meshes each) — every skyline building shares
+ * the same 8x8 footprint, so only height/position/color vary per instance.
+ */
+function SkylineBuildings() {
+  return (
+    <>
+      {SKYLINE_BODY_GROUPS.map((group) => (
+        <SkylineBodyGroup key={`body-${group.key}`} color={group.key} buildings={group.buildings} />
+      ))}
+      {SKYLINE_NEON_GROUPS.map((group) => (
+        <SkylineNeonStripGroup key={`strip-${group.key}`} color={group.key} buildings={group.buildings} />
+      ))}
+      {SKYLINE_NEON_GROUPS.map((group) => (
+        <SkylineGlowSphereGroup key={`glow-${group.key}`} color={group.key} buildings={group.buildings} />
+      ))}
+    </>
+  );
+}
+
+function SkylineBodyGroup({ color, buildings }: { color: string; buildings: BuildingConfig[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    buildings.forEach((building, index) => {
+      dummy.position.set(building.position[0], building.height / 2, building.position[2]);
+      dummy.scale.set(building.width, building.height, building.depth);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [buildings]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, buildings.length]} castShadow={false}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial {...BACKGROUND_BUILDING_MATERIAL_PROPS} color={color} />
+    </instancedMesh>
+  );
+}
+
+function SkylineNeonStripGroup({ color, buildings }: { color: string; buildings: BuildingConfig[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const instanceCount = buildings.length * NEON_STRIP_HEIGHT_FRACTIONS.length;
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    let instanceIndex = 0;
+    buildings.forEach((building) => {
+      NEON_STRIP_HEIGHT_FRACTIONS.forEach((fraction) => {
+        dummy.position.set(
+          building.position[0],
+          building.height * fraction,
+          building.position[2] + building.depth / 2 + 0.02,
+        );
+        dummy.scale.set(building.width * 0.7, 0.3, 0.05);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(instanceIndex, dummy.matrix);
+        instanceIndex += 1;
+      });
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [buildings]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, instanceCount]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2.5} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+function SkylineGlowSphereGroup({ color, buildings }: { color: string; buildings: BuildingConfig[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  useEffect(() => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const dummy = new THREE.Object3D();
+    buildings.forEach((building, index) => {
+      dummy.position.set(building.position[0], building.height + 0.6, building.position[2]);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [buildings]);
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, buildings.length]}>
+      <sphereGeometry args={[0.3, 8, 8]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={4} toneMapped={false} />
+    </instancedMesh>
   );
 }
 
@@ -819,9 +930,7 @@ export function World({ isMobile }: WorldProps) {
       <RoadArrows />
       <Barriers />
 
-      {SKYLINE_BUILDINGS.map((building, index) => (
-        <Building key={index} {...building} />
-      ))}
+      <SkylineBuildings />
       {BILLBOARDS.map((billboard, index) => (
         <Billboard key={index} {...billboard} />
       ))}

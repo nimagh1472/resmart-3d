@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, type RootState } from '@react-three/fiber';
 import { Physics, type RapierRigidBody } from '@react-three/rapier';
+import { PerformanceMonitor } from '@react-three/drei';
 import { ACESFilmicToneMapping } from 'three';
 import { Environment } from '@/components/3d/Environment';
 import { Ground } from '@/components/3d/Ground';
@@ -30,6 +31,13 @@ export function Experience() {
   const setWebGLError = useRoleStore((state) => state.setWebGLError);
   const [isMobile] = useState(detectIsMobile);
   const [canvasKey, setCanvasKey] = useState(0);
+  // FPS safeguard: PerformanceMonitor (drei) samples the actual rendered
+  // frame rate and flips this once sustained frames land below ~45fps —
+  // Environment/World/Vehicle all fold isDegraded into the same isMobile
+  // branches they already use to drop shadows/SSAO/Bloom, so a struggling
+  // desktop GPU gets the same relief a phone gets by default. onIncline
+  // restores quality if performance recovers (e.g. an initial load spike).
+  const [isDegraded, setIsDegraded] = useState(false);
   useKeyboardControls();
 
   const handleContextLost = useCallback(
@@ -72,7 +80,7 @@ export function Experience() {
   return (
     <Canvas
       key={canvasKey}
-      shadows={isMobile ? false : 'soft'}
+      shadows={isMobile || isDegraded ? false : 'soft'}
       camera={{ position: [20, 18, 20], fov: 42, near: 0.5, far: 800 }}
       dpr={Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)}
       gl={{
@@ -85,14 +93,20 @@ export function Experience() {
       }}
       onCreated={handleCreated}
     >
+      <PerformanceMonitor
+        bounds={() => [45, 60]}
+        flipflops={2}
+        onDecline={() => setIsDegraded(true)}
+        onIncline={() => setIsDegraded(false)}
+      />
       <Suspense fallback={null}>
         <Physics gravity={[0, -9.81, 0]}>
-          <Environment isMobile={isMobile} />
+          <Environment isMobile={isMobile || isDegraded} />
           <Ground />
-          <World isMobile={isMobile} />
+          <World isMobile={isMobile || isDegraded} />
           <TrafficObstacles vehicleRef={vehicleRef} />
           <Zones vehicleRef={vehicleRef} />
-          <Vehicle ref={vehicleRef} isMobile={isMobile} />
+          <Vehicle ref={vehicleRef} isMobile={isMobile || isDegraded} />
           <CameraRig vehicleRef={vehicleRef} />
           <InvestorSimulationScene />
         </Physics>
