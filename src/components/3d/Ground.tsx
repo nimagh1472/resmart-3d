@@ -23,7 +23,7 @@ export function Ground() {
       <RigidBody type="fixed" colliders="cuboid" friction={1}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[WIDTH, DEPTH]} />
-          <meshStandardMaterial color="#12102a" />
+          <meshStandardMaterial color="#E5DDCB" roughness={0.95} metalness={0} />
         </mesh>
       </RigidBody>
 
@@ -31,11 +31,11 @@ export function Ground() {
         position={[0, 0.01, 0]}
         args={[WIDTH, DEPTH]}
         cellSize={4}
-        cellThickness={0.6}
-        cellColor="#7c3aed"
+        cellThickness={0.5}
+        cellColor="#C9BFA0"
         sectionSize={20}
-        sectionThickness={1.4}
-        sectionColor="#22c55e"
+        sectionThickness={1.2}
+        sectionColor="#E08E68"
         fadeDistance={160}
         fadeStrength={1}
         infiniteGrid={false}

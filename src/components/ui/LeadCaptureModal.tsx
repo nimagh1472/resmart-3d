@@ -14,7 +14,7 @@ const CAMPAIGN_COMPLETE_SOURCE = 'campaign_complete';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'AED',
   maximumFractionDigits: 0,
 });
 
@@ -148,7 +148,7 @@ export function LeadCaptureModal() {
                 <Gift size={12} /> Real Off Voucher
               </span>
               <span className="text-sm font-semibold text-white">
-                {voucherCount > 0 ? `$${voucherValue} off` : 'Keep earning — $1,000 unlocks $5 off'}
+                {voucherCount > 0 ? `AED ${voucherValue} off` : 'Keep earning — AED 1,000 unlocks AED 20 off'}
               </span>
             </div>
             {voucherCode && (

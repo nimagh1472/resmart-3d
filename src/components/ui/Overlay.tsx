@@ -17,7 +17,7 @@ const TouchControls = dynamic(() => import('@/components/ui/TouchControls').then
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
-  currency: 'USD',
+  currency: 'AED',
   maximumFractionDigits: 0,
 });
 

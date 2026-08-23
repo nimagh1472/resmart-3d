@@ -34,13 +34,13 @@ interface BillboardConfig {
 const EDGE_OFFSET = (WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX) / 2 + 15; // strictly outside the walled play area
 const BUILDINGS_PER_EDGE = 5;
 const EDGE_SPACING = 40;
-const SKYLINE_NEON_COLORS = ['#facc15', '#a855f7', '#22d3ee'];
+const SKYLINE_NEON_COLORS = ['#FFD166', '#FF8FA3', '#4ECDC4'];
 
 function buildEdge(axis: 'x' | 'z', sign: 1 | -1): BuildingConfig[] {
   return Array.from({ length: BUILDINGS_PER_EDGE }, (_, index) => {
     const offset = (index - (BUILDINGS_PER_EDGE - 1) / 2) * EDGE_SPACING;
     const height = 14 + (index % 3) * 8;
-    const color = index % 2 === 0 ? '#1e1b3a' : '#171331';
+    const color = index % 2 === 0 ? '#E8C39E' : '#D9A679';
     const neonColor = SKYLINE_NEON_COLORS[index % SKYLINE_NEON_COLORS.length];
     const position: [number, number, number] =
       axis === 'z' ? [offset, 0, sign * EDGE_OFFSET] : [sign * EDGE_OFFSET, 0, offset];
@@ -57,8 +57,8 @@ const SKYLINE_BUILDINGS: BuildingConfig[] = [
 ];
 
 const BILLBOARDS: BillboardConfig[] = [
-  { position: [-12, 0, -20], rotationY: Math.PI * 0.15, label: 'RESMART AI', color: '#a855f7' },
-  { position: [12, 0, -20], rotationY: -Math.PI * 0.15, label: 'DRIVE THE FUTURE', color: '#22c55e' },
+  { position: [-12, 0, -20], rotationY: Math.PI * 0.15, label: 'RESMART AI', color: '#FF8FA3' },
+  { position: [12, 0, -20], rotationY: -Math.PI * 0.15, label: 'DRIVE THE FUTURE', color: '#8CE99A' },
 ];
 
 // Dubai Mall district cluster, offset from MALL_DISTRICT_CENTER (which
@@ -70,24 +70,24 @@ const MALL_BUILDINGS: BuildingConfig[] = [
     width: 12,
     depth: 10,
     height: 20,
-    color: '#0f2438',
-    neonColor: '#22d3ee',
+    color: '#EFDAB8',
+    neonColor: '#4ECDC4',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 16, 0, MALL_DISTRICT_CENTER[2] - 14],
     width: 14,
     depth: 12,
     height: 16,
-    color: '#12213a',
-    neonColor: '#facc15',
+    color: '#E8C39E',
+    neonColor: '#FFD166',
   },
   {
     position: [MALL_DISTRICT_CENTER[0] + 4, 0, MALL_DISTRICT_CENTER[2] + 22],
     width: 10,
     depth: 9,
     height: 12,
-    color: '#101c34',
-    neonColor: '#a855f7',
+    color: '#E3B48D',
+    neonColor: '#FF8FA3',
   },
 ];
 
@@ -107,7 +107,7 @@ const TOWER_SEGMENTS: TowerSegmentConfig[] = [
 ];
 const TOWER_SPIRE_HEIGHT = 12;
 const TOWER_TOTAL_HEIGHT = TOWER_SEGMENTS.reduce((sum, segment) => sum + segment.height, 0) + TOWER_SPIRE_HEIGHT;
-const TOWER_NEON_COLORS = ['#facc15', '#22d3ee'];
+const TOWER_NEON_COLORS = ['#FFD166', '#4ECDC4'];
 
 const PALM_TREE_RING_COUNT = 16;
 const PALM_TREE_RING_RADIUS = BOULEVARD_OUTER_RADIUS + 5;
@@ -178,19 +178,19 @@ function Billboard({ position, rotationY, label, color }: BillboardConfig) {
     <group position={position} rotation={[0, rotationY, 0]}>
       <mesh position={[0, 8, 0]} castShadow>
         <boxGeometry args={[9, 4.5, 0.3]} />
-        <meshStandardMaterial color="#0f0c29" />
+        <meshStandardMaterial color="#7C5C42" />
       </mesh>
       <mesh position={[0, 8, 0.19]}>
         <planeGeometry args={[8, 3.5]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1.4} toneMapped={false} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={1} toneMapped={false} />
       </mesh>
-      <FacingText position={[0, 8, 0.22]} fontSize={0.9} color="#0b0a1a" anchorX="center" anchorY="middle" maxWidth={7}>
+      <FacingText position={[0, 8, 0.22]} fontSize={0.9} color="#3A2E22" anchorX="center" anchorY="middle" maxWidth={7}>
         {label}
       </FacingText>
       {[-4.2, 4.2].map((x, index) => (
         <mesh key={index} position={[x, 4, 0]}>
           <cylinderGeometry args={[0.3, 0.3, 8, 8]} />
-          <meshStandardMaterial color="#1e1b3a" />
+          <meshStandardMaterial color="#7C5C42" />
         </mesh>
       ))}
     </group>
@@ -221,7 +221,7 @@ function CentralTower() {
         <group key={index} position={[0, segment.y, 0]}>
           <mesh position={[0, segment.height / 2, 0]} castShadow>
             <boxGeometry args={[segment.width, segment.height, segment.depth]} />
-            <meshStandardMaterial color="#161335" />
+            <meshStandardMaterial color="#EAD9B8" roughness={0.7} />
           </mesh>
           {(['+x', '-x', '+z', '-z'] as const).map((face) => {
             const isXFace = face.includes('x');
@@ -250,15 +250,15 @@ function CentralTower() {
 
       <mesh position={[0, cumulativeHeight + TOWER_SPIRE_HEIGHT / 2, 0]} castShadow>
         <coneGeometry args={[1.4, TOWER_SPIRE_HEIGHT, 8]} />
-        <meshStandardMaterial color="#e5e7eb" emissive="#facc15" emissiveIntensity={0.5} />
+        <meshStandardMaterial color="#F5EFE0" emissive="#FFD166" emissiveIntensity={0.5} />
       </mesh>
       <mesh position={[0, cumulativeHeight + TOWER_SPIRE_HEIGHT + 0.6, 0]}>
         <sphereGeometry args={[0.5, 8, 8]} />
-        <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={4} toneMapped={false} />
+        <meshStandardMaterial color="#FFD166" emissive="#FFD166" emissiveIntensity={4} toneMapped={false} />
       </mesh>
       <pointLight
         position={[0, cumulativeHeight + TOWER_SPIRE_HEIGHT, 0]}
-        color="#facc15"
+        color="#FFD166"
         intensity={50}
         distance={70}
         decay={2}
@@ -267,7 +267,7 @@ function CentralTower() {
       <FacingText
         position={[0, TOWER_TOTAL_HEIGHT * 0.3, baseSegment.depth / 2 + 0.3]}
         fontSize={1.4}
-        color="#facc15"
+        color="#7C5C42"
         anchorX="center"
         anchorY="middle"
       >
@@ -288,7 +288,7 @@ function Boulevard() {
     <group position={[0, 0.02, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[BOULEVARD_INNER_RADIUS, BOULEVARD_OUTER_RADIUS, 64]} />
-        <meshStandardMaterial color="#171331" />
+        <meshStandardMaterial color="#B7AE9C" roughness={0.9} />
       </mesh>
       {Array.from({ length: BOULEVARD_DASH_COUNT }, (_, index) => {
         if (index % 2 === 1) return null;
@@ -335,7 +335,7 @@ function StreetLamp({ position }: { position: [number, number, number] }) {
     <group position={position}>
       <mesh position={[0, 2.5, 0]} castShadow>
         <cylinderGeometry args={[0.08, 0.1, 5, 8]} />
-        <meshStandardMaterial color="#1e1b3a" />
+        <meshStandardMaterial color="#7C5C42" />
       </mesh>
       <mesh position={[0, 5, 0]}>
         <sphereGeometry args={[0.32, 8, 8]} />
@@ -351,8 +351,8 @@ function RoadArrow({ position, rotationY }: RoadArrowConfig) {
     <mesh position={[position[0], 0.03, position[2]]} rotation={[-Math.PI / 2, 0, rotationY]}>
       <coneGeometry args={[0.6, 1.6, 3]} />
       <meshStandardMaterial
-        color="#22d3ee"
-        emissive="#22d3ee"
+        color="#4ECDC4"
+        emissive="#4ECDC4"
         emissiveIntensity={1.8}
         toneMapped={false}
         transparent
@@ -399,7 +399,7 @@ function Fountain() {
     <group position={FOUNTAIN_POSITION}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
         <circleGeometry args={[5, 32]} />
-        <meshStandardMaterial color="#0c4a6e" />
+        <meshStandardMaterial color="#5DADE2" />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0]}>
         <ringGeometry args={[4.6, 5, 32]} />

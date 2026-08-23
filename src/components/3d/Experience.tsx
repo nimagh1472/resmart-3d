@@ -3,12 +3,14 @@
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { Canvas, type RootState } from '@react-three/fiber';
 import { Physics, type RapierRigidBody } from '@react-three/rapier';
+import { ACESFilmicToneMapping } from 'three';
 import { Environment } from '@/components/3d/Environment';
 import { Ground } from '@/components/3d/Ground';
 import { World } from '@/components/3d/World';
 import { Zones } from '@/components/3d/Zones';
 import { Vehicle } from '@/components/3d/Vehicle';
 import { CameraRig } from '@/components/3d/CameraRig';
+import { TrafficObstacles } from '@/components/3d/TrafficObstacles';
 import { useKeyboardControls } from '@/hooks/useKeyboardControls';
 import { useRoleStore } from '@/hooks/useRoleStore';
 
@@ -72,6 +74,7 @@ export function Experience() {
       shadows={!isMobile}
       camera={{ position: [0, 15, 30], fov: 60, near: 0.1, far: 500 }}
       dpr={[1, 2]}
+      gl={{ toneMapping: ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
       onCreated={handleCreated}
     >
       <Suspense fallback={null}>
@@ -79,6 +82,7 @@ export function Experience() {
           <Environment isMobile={isMobile} />
           <Ground />
           <World />
+          <TrafficObstacles />
           <Zones vehicleRef={vehicleRef} />
           <Vehicle ref={vehicleRef} isMobile={isMobile} />
           <CameraRig vehicleRef={vehicleRef} />

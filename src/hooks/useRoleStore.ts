@@ -172,7 +172,7 @@ export const useRoleStore = create<RoleState>((set, get) => ({
     if (isFirstEver) {
       get().pushFeaturePopup('CASHBACK_REWARDS');
     } else {
-      get().pushFeaturePopup('CASHBACK_REWARDS', `+$${amount.toFixed(0)} cashback`);
+      get().pushFeaturePopup('CASHBACK_REWARDS', `+AED ${amount.toFixed(0)} cashback`);
     }
 
     if (get().collectedPickupIds.length >= CASHBACK_PICKUPS.length) {

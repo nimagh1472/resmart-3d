@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useCallback, useRef } from 'react';
+import { forwardRef, useCallback, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, type RapierRigidBody } from '@react-three/rapier';
 import { ContactShadows } from '@react-three/drei';
@@ -42,6 +42,12 @@ const TURN_RESPONSE = 6;
 const TILT_RESPONSE = 5;
 const MAX_ROLL = 0.22; // radians of bank into a turn
 const MAX_PITCH = 0.09; // radians of nose dip/lift under accel/brake
+
+// Drift dust kicks in once the car is moving fast AND steering hard —
+// exactly the "fast steering change at speed" moment a drift reads as.
+const DRIFT_SPEED_THRESHOLD = 0.35; // fraction of top speed
+const DRIFT_RESPONSE = 6;
+const DUST_PARTICLE_COUNT = 24;
 
 /** Exponential approach of `current` toward `target`, framerate-independent. */
 function damp(current: number, target: number, response: number, delta: number): number {
@@ -102,6 +108,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const currentRoll = useRef(0);
   const currentPitch = useRef(0);
   const tiltGroupRef = useRef<THREE.Group>(null);
+  const driftIntensity = useRef(0);
 
   useFrame((_, rawDelta) => {
     const rigidBody = rigidBodyRef.current;
@@ -126,6 +133,7 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     const speedFactor = THREE.MathUtils.clamp(Math.abs(currentSpeed.current) / (MAX_SPEED * BOOST_MULTIPLIER), 0, 1);
     const effectiveTurnRate = TURN_RATE * (1 - speedFactor * TURN_RATE_FALLOFF_AT_TOP_SPEED);
     const targetTurnRate = turnInput * effectiveTurnRate * (forwardInput < 0 ? -1 : 1);
+    const turnMagnitude = Math.abs(turnInput);
 
     previousSpeed.current = currentSpeed.current;
     currentSpeed.current = damp(currentSpeed.current, targetSpeed, speedResponse, delta);
@@ -181,6 +189,12 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
       tiltGroupRef.current.rotation.z = currentRoll.current;
       tiltGroupRef.current.rotation.x = currentPitch.current;
     }
+
+    // Drift dust: a fast steering change only reads as a "drift" once the
+    // car has real speed behind it — gated on speedFactor, driven by how
+    // hard the (speed-falloff-adjusted) turn rate is currently being pushed.
+    const targetDrift = speedFactor > DRIFT_SPEED_THRESHOLD ? THREE.MathUtils.clamp(turnMagnitude, 0, 1) : 0;
+    driftIntensity.current = damp(driftIntensity.current, targetDrift, DRIFT_RESPONSE, delta);
   });
 
   const isAgent = activeRole === 'AGENT';
@@ -190,10 +204,68 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
       <CuboidCollider args={[1.1, 0.6, 1.9]} />
       <group ref={tiltGroupRef}>
         {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
+        <DriftDust intensityRef={driftIntensity} />
       </group>
     </RigidBody>
   );
 });
+
+/**
+ * Rear-mounted tire dust: a shared-material instanced puff cloud whose
+ * opacity/scale track driftIntensity (set in the parent Vehicle's useFrame)
+ * and whose per-particle offsets drift outward/upward over time via a
+ * simple looping phase — cheap enough to run every frame with no allocation.
+ */
+function DriftDust({ intensityRef }: { intensityRef: React.MutableRefObject<number> }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  const seeds = useMemo(
+    () =>
+      Array.from({ length: DUST_PARTICLE_COUNT }, () => ({
+        angle: Math.random() * Math.PI * 2,
+        radius: 0.3 + Math.random() * 1.2,
+        speed: 0.5 + Math.random() * 0.7,
+        phase: Math.random(),
+      })),
+    [],
+  );
+
+  useFrame((state) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+
+    const intensity = THREE.MathUtils.clamp(intensityRef.current, 0, 1);
+    if (materialRef.current) materialRef.current.opacity = intensity * 0.5;
+    mesh.visible = intensity > 0.02;
+    if (!mesh.visible) return;
+
+    const t = state.clock.elapsedTime;
+    seeds.forEach((seed, index) => {
+      const cycle = (t * seed.speed + seed.phase) % 1;
+      const spread = seed.radius * (0.6 + intensity * 0.8);
+      dummy.position.set(Math.sin(seed.angle) * spread * cycle, 0.15 + cycle * 0.6, -1.9 - cycle * 2.4);
+      dummy.scale.setScalar((0.12 + intensity * 0.22) * (0.4 + cycle));
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, DUST_PARTICLE_COUNT]} visible={false}>
+      <sphereGeometry args={[0.4, 6, 6]} />
+      <meshStandardMaterial
+        ref={materialRef}
+        color="#D9C4A0"
+        transparent
+        opacity={0}
+        depthWrite={false}
+        roughness={1}
+      />
+    </instancedMesh>
+  );
+}
 
 interface VehicleMeshProps {
   isMobile: boolean;

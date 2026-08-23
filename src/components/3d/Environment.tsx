@@ -1,44 +1,59 @@
 'use client';
 
-import { Stars } from '@react-three/drei';
+import { EffectComposer, SSAO, Bloom } from '@react-three/postprocessing';
+import { Color } from 'three';
+
+const SSAO_SHADOW_COLOR = new Color('#3a2c1d');
 
 interface EnvironmentProps {
   isMobile: boolean;
 }
 
 /**
- * Cyberpunk night sky and lighting rig: procedural starfield (no HDRI
- * download), a cool moonlight key light, and purple/green neon fill lights.
- * The key light only casts real-time shadows on desktop; mobile relies on
- * the vehicle's lightweight ContactShadows instead (see Vehicle.tsx).
+ * Bruno Simon-style bright clay/toy lighting rig: a soft pastel sky, warm
+ * directional "sunlight" casting dynamic shadows, and gentle ambient/
+ * hemisphere fill so nothing reads as pitch black. Postprocessing (SSAO
+ * contact shadows + a subtle bloom on emissive accents) only runs on
+ * desktop — both are relatively expensive per-pixel passes.
  */
 export function Environment({ isMobile }: EnvironmentProps) {
   return (
     <>
-      <color attach="background" args={['#0b0a1a']} />
-      <Stars radius={140} depth={60} count={2500} factor={3} saturation={0} fade speed={0.4} />
+      <color attach="background" args={['#BEE3F8']} />
 
-      <hemisphereLight args={['#a855f7', '#0f172a', 0.5]} />
-      <ambientLight intensity={0.18} color="#22d3ee" />
+      <hemisphereLight args={['#FFF8E7', '#E5DDCB', 0.6]} />
+      <ambientLight intensity={0.8} color="#FFF8E7" />
 
       <directionalLight
         castShadow={!isMobile}
-        position={[40, 60, 20]}
-        intensity={1.1}
-        color="#c4b5fd"
-        shadow-mapSize={[1024, 1024]}
+        position={[30, 50, 30]}
+        intensity={1.2}
+        color="#FFF3D6"
+        shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-100}
         shadow-camera-right={100}
         shadow-camera-top={100}
         shadow-camera-bottom={-100}
+        shadow-bias={-0.0004}
       />
 
-      <pointLight position={[-50, 14, -50]} color="#a855f7" intensity={80} distance={70} decay={2} />
-      <pointLight position={[50, 14, 50]} color="#22c55e" intensity={80} distance={70} decay={2} />
-      <pointLight position={[50, 14, -50]} color="#22c55e" intensity={80} distance={70} decay={2} />
-      <pointLight position={[-50, 14, 50]} color="#a855f7" intensity={80} distance={70} decay={2} />
+      <fog attach="fog" args={['#BEE3F8', 90, 260]} />
 
-      <fog attach="fog" args={['#0b0a1a', 50, 220]} />
+      {!isMobile && (
+        <EffectComposer multisampling={0}>
+          <SSAO
+            radius={0.3}
+            intensity={20}
+            luminanceInfluence={0.4}
+            color={SSAO_SHADOW_COLOR}
+            worldDistanceThreshold={20}
+            worldDistanceFalloff={5}
+            worldProximityThreshold={1.5}
+            worldProximityFalloff={0.5}
+          />
+          <Bloom luminanceThreshold={0.85} luminanceSmoothing={0.3} intensity={0.5} mipmapBlur />
+        </EffectComposer>
+      )}
     </>
   );
 }

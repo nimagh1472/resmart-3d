@@ -54,7 +54,7 @@ export function CashbackPickup({ pickup, vehicleRef }: CashbackPickupProps) {
           <meshStandardMaterial color="#facc15" emissive="#facc15" emissiveIntensity={2.2} toneMapped={false} />
         </mesh>
         <FacingText position={[0, 0, 0.1]} fontSize={0.5} color="#78350f" anchorX="center" anchorY="middle">
-          {`$${pickup.amount}`}
+          {`AED ${pickup.amount}`}
         </FacingText>
       </group>
       <pointLight position={[0, 1.5, 0]} color="#facc15" intensity={12} distance={8} decay={2} />

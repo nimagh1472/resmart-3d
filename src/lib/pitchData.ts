@@ -88,7 +88,7 @@ export const FINANCIAL_METRICS = {
       'Projected annual recurring revenue for Year 1 based on modeled customer and agent adoption rates.',
   },
   seedAsk: {
-    value: 750_000,
+    value: 2_750_000,
     label: 'Seed Ask',
     source: '[cite: 1]',
     assumption:
@@ -161,7 +161,7 @@ export const STATIONS: StationDefinition[] = [
     metricKeys: ['netMarginPerOrder'],
     requiresStation: 'AGENT_DISPATCH',
     investorPitchLine: {
-      text: 'ReSmart Agents eliminate buyer fear by physically testing gadgets before delivery ($22.50 net margin per order).',
+      text: 'ReSmart Agents eliminate buyer fear by physically testing gadgets before delivery (AED 22.50 net margin per order).',
       source: '[cite: 1]',
       assumption:
         'Agent verification cost and margin retained per order are drawn from FINANCIAL_METRICS.netMarginPerOrder.',
@@ -191,7 +191,7 @@ export const STATIONS: StationDefinition[] = [
     visibleTo: ['CUSTOMER', 'AGENT'],
     metricKeys: ['usMarket', 'seedAsk', 'yearOneARR'],
     investorPitchLine: {
-      text: 'Raising $750K Seed Round for 10x ARR growth ($2.6M Target).',
+      text: 'Raising AED 2.75M Seed Round for 10x ARR growth (AED 2.6M Target).',
       source: '[cite: 1]',
       assumption:
         'ARR target rounds FINANCIAL_METRICS.yearOneARR; growth multiple is modeled off current traction against the seed ask.',
@@ -221,7 +221,7 @@ export const STORY_CHAPTERS: Record<StoryRoleKey, StoryChapterDef[]> = {
     {
       title: 'Chapter 1: The Price Hunt',
       guideDialogue:
-        "Every dirham counts. Drive to the AI Vision Search hub near Dubai Mall — let's scan local store prices and prove we can save you $200+.",
+        "Every dirham counts. Drive to the AI Vision Search hub near Dubai Mall — let's scan local store prices and prove we can save you AED 200+.",
       objective: 'Reach the AI Vision Search Hub near Dubai Mall',
     },
     {
@@ -248,7 +248,7 @@ export const STORY_CHAPTERS: Record<StoryRoleKey, StoryChapterDef[]> = {
       title: 'Chapter 2: Trust, Verified',
       guideDialogue:
         "Before it ships, prove it's good. Drive to the Merchant Test Station, inspect the gadget, and stamp it Certified Verified.",
-      objective: 'Certify the gadget at the Merchant Test Station ($25 fee)',
+      objective: 'Certify the gadget at the Merchant Test Station (AED 25 fee)',
     },
     {
       title: 'Chapter 3: Race the Clock',
@@ -260,14 +260,14 @@ export const STORY_CHAPTERS: Record<StoryRoleKey, StoryChapterDef[]> = {
 };
 
 /**
- * Real-world voucher conversion: every $1,000 earned/saved in-game converts
- * to a $5 Real Off voucher, redeemable at ReSmart launch. A full campaign
+ * Real-world voucher conversion: every AED 1,000 earned/saved in-game converts
+ * to a AED 20 Real Off voucher, redeemable at ReSmart launch. A full campaign
  * playthrough's wallet total is topped up with a completion bonus so a
  * finished campaign always clears at least one voucher tier.
  */
 export const VOUCHER_CONVERSION = {
   earningsPerVoucher: 1000,
-  voucherValuePerTier: 5,
+  voucherValuePerTier: 20,
 };
 
 export const CAMPAIGN_COMPLETION_BONUS: Record<StoryRoleKey, number> = {
@@ -315,7 +315,7 @@ export const BUSINESS_FEATURES: Record<BusinessFeatureKey, BusinessFeature> = {
   },
 };
 
-/** Inclusive random integer-ish dollar amount, e.g. for the $15–$25 verification fee. */
+/** Inclusive random integer-ish dirham amount, e.g. for the AED 15–AED 25 verification fee. */
 export function randomInRange(min: number, max: number): number {
   return Math.round((min + Math.random() * (max - min)) * 100) / 100;
 }

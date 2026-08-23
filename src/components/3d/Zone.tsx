@@ -28,9 +28,9 @@ const ONE_SHOT_STATION_IDS: StationId[] = ['CUSTOMER_STORE', 'CUSTOMER_EXPRESS',
 
 function formatMetricValue(value: number | string): string {
   if (typeof value !== 'number') return value;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
-  return `$${value.toLocaleString()}`;
+  if (value >= 1_000_000) return `AED ${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
+  if (value >= 1_000) return `AED ${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
+  return `AED ${value.toLocaleString()}`;
 }
 
 /**
@@ -121,7 +121,7 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
         return;
       }
       const fee = completeVerification();
-      pushFeaturePopup('AGENT_EARNINGS', `+$${fee.toFixed(0)} testing fee`);
+      pushFeaturePopup('AGENT_EARNINGS', `+AED ${fee.toFixed(0)} testing fee`);
       return;
     }
 
@@ -137,7 +137,7 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
         origin: { y: 0.6 },
         colors: ['#22c55e', '#a855f7', '#7dd3fc'],
       });
-      pushFeaturePopup('DELIVERY_GUARANTEE', `+$${bonus.toFixed(0)} delivery bonus`);
+      pushFeaturePopup('DELIVERY_GUARANTEE', `+AED ${bonus.toFixed(0)} delivery bonus`);
     }
   }
 
@@ -147,7 +147,7 @@ export function Zone({ zone, vehicleRef }: ZoneProps) {
 
     if (zone.id === 'CUSTOMER_STORE') {
       const savings = randomInRange(8, 40);
-      pushFeaturePopup('AI_COMPARISON', `Found a deal $${savings.toFixed(0)} cheaper`);
+      pushFeaturePopup('AI_COMPARISON', `Found a deal AED ${savings.toFixed(0)} cheaper`);
     }
 
     if (zone.id === 'CUSTOMER_EXPRESS') {

@@ -6,9 +6,9 @@ import { PITCH_DECK_PATH, PITCH_METRICS } from '@/lib/pitchData';
 
 function formatValue(value: number | string): string {
   if (typeof value !== 'number') return value;
-  if (value >= 1_000_000) return `$${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
-  if (value >= 1_000) return `$${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
-  return `$${value.toLocaleString()}`;
+  if (value >= 1_000_000) return `AED ${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 2 })}M`;
+  if (value >= 1_000) return `AED ${(value / 1_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
+  return `AED ${value.toLocaleString()}`;
 }
 
 /**
