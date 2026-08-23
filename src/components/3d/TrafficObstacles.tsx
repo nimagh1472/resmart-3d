@@ -105,7 +105,7 @@ function TrafficCone({ position }: { position: [number, number, number] }) {
       friction={0.8}
       angularDamping={1.5}
       linearDamping={0.4}
-      mass={2}
+      mass={1}
       userData={OBSTACLE_USER_DATA}
     >
       <mesh castShadow>
@@ -127,11 +127,11 @@ function WoodenCrate({ position }: { position: [number, number, number] }) {
       type="dynamic"
       colliders="cuboid"
       position={position}
-      restitution={0.3}
+      restitution={0.4}
       friction={0.9}
       angularDamping={1.2}
       linearDamping={0.3}
-      mass={6}
+      mass={1}
       userData={OBSTACLE_USER_DATA}
     >
       <mesh castShadow>
@@ -161,11 +161,11 @@ function KnockableBillboard({ position, rotationY, label, color }: BillboardObst
       colliders="cuboid"
       position={position}
       rotation={[0, rotationY, 0]}
-      restitution={0.2}
+      restitution={0.4}
       friction={0.7}
       angularDamping={0.9}
       linearDamping={0.25}
-      mass={10}
+      mass={1}
       userData={OBSTACLE_USER_DATA}
     >
       <mesh castShadow position={[0, 2.6, 0]}>

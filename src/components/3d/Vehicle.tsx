@@ -136,6 +136,16 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const driftIntensity = useRef(0);
   const boostIntensity = useRef(0);
 
+  // Rendering/physics decoupling: the visible mesh group is a sibling of the
+  // RigidBody (not a child), smoothly lerped toward the RigidBody's actual
+  // translation/rotation every frame instead of snapping to it 1:1 — hides
+  // any physics-step/render-step timing mismatch behind a barely-perceptible
+  // (~ a few frames at 60fps) smoothing lag. Collision bounds are entirely
+  // unaffected since the CuboidCollider stays on the RigidBody itself.
+  const meshGroupRef = useRef<THREE.Group>(null);
+  const physicsPosition = useRef(new THREE.Vector3());
+  const physicsQuaternion = useRef(new THREE.Quaternion());
+
   // Manual mid-air arc state for stunt-ramp jumps (see RAMP_LAUNCH_* above) —
   // verticalVelocity/isAirborne drive position.current.y directly since the
   // vehicle's kinematic RigidBody never gets this from Rapier itself.
@@ -276,6 +286,20 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
     vehicleTelemetry.x = position.current.x;
     vehicleTelemetry.z = position.current.z;
 
+    // Decoupled visual mesh: lerp toward the RigidBody's own (authoritative)
+    // transform rather than the just-computed target directly, using a
+    // framerate-independent exponential smoothing factor.
+    if (meshGroupRef.current) {
+      const translation = rigidBody.translation();
+      const rotation = rigidBody.rotation();
+      physicsPosition.current.set(translation.x, translation.y, translation.z);
+      physicsQuaternion.current.set(rotation.x, rotation.y, rotation.z, rotation.w);
+
+      const lerpFactor = 1 - Math.exp(-25 * delta);
+      meshGroupRef.current.position.lerp(physicsPosition.current, lerpFactor);
+      meshGroupRef.current.quaternion.slerp(physicsQuaternion.current, lerpFactor);
+    }
+
     // Visual-only body-roll (bank into turns) and suspension pitch (nose
     // dips under acceleration, lifts under braking) — never touches the
     // RigidBody transform above, so collision bounds stay flat/predictable.
@@ -314,20 +338,24 @@ export const Vehicle = forwardRef<RapierRigidBody, VehicleProps>(function Vehicl
   const isAgent = activeRole === 'AGENT';
 
   return (
-    <RigidBody
-      ref={setRigidBodyRef}
-      type="kinematicPosition"
-      colliders={false}
-      position={SPAWN_POSITION}
-      onCollisionEnter={handleCollisionEnter}
-    >
-      <CuboidCollider args={[1.1, 0.6, 1.9]} />
-      <group ref={tiltGroupRef}>
-        {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
-        <DriftDust intensityRef={driftIntensity} />
-        <BoostTrail intensityRef={boostIntensity} />
+    <>
+      <RigidBody
+        ref={setRigidBodyRef}
+        type="kinematicPosition"
+        colliders={false}
+        position={SPAWN_POSITION}
+        onCollisionEnter={handleCollisionEnter}
+      >
+        <CuboidCollider args={[1.1, 0.6, 1.9]} />
+      </RigidBody>
+      <group ref={meshGroupRef} position={SPAWN_POSITION}>
+        <group ref={tiltGroupRef}>
+          {isAgent ? <AgentScooter isMobile={isMobile} /> : <CustomerCityCar isMobile={isMobile} />}
+          <DriftDust intensityRef={driftIntensity} />
+          <BoostTrail intensityRef={boostIntensity} />
+        </group>
       </group>
-    </RigidBody>
+    </>
   );
 });
 

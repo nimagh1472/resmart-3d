@@ -15,7 +15,7 @@ interface CameraRigProps {
 
 // Predefined per-mode camera offsets/keyframes, applied relative to the
 // vehicle's own orientation quaternion.
-const INTERACTIVE_OFFSET = new THREE.Vector3(18, 16, 18);
+const INTERACTIVE_OFFSET = new THREE.Vector3(20, 18, 20);
 const GUIDED_OFFSET = new THREE.Vector3(0, 11, -18);
 const LOOK_AT_OFFSET = new THREE.Vector3(0, 0, 0);
 const MIN_HEIGHT_ABOVE_VEHICLE = 8;
@@ -34,7 +34,7 @@ function dampFactor(response: number, delta: number): number {
 // Overview shown before a vehicle exists or a role has been picked, so the
 // camera never defaults to an unframed/undefined view (e.g. pointing at the
 // sky) while the player is still on the role-select screen.
-const OVERVIEW_POSITION = new THREE.Vector3(18, 16, 18);
+const OVERVIEW_POSITION = new THREE.Vector3(20, 18, 20);
 const OVERVIEW_LOOK_TARGET = new THREE.Vector3(0, 0, 0);
 
 const TOUR_ORBIT_RADIUS = 18;
@@ -62,7 +62,7 @@ const ROTATION_RESPONSE: Record<PresentationMode, number> = {
 
 // Nitro boost FOV kick: widening the lens while boosting reads as speed
 // without touching the chase-cam offsets above.
-const BASE_FOV = 35;
+const BASE_FOV = 34;
 const BOOST_FOV = 48;
 const FOV_RESPONSE = 4;
 

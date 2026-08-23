@@ -15,10 +15,10 @@ function detectLowEndGpu(): boolean {
 
 const SSAO_SHADOW_COLOR = new Color('#1c2b3a');
 
-const SKY_COLOR = '#a8d5e8';
-const FOG_COLOR = '#a8d5e8';
-const FOG_NEAR = 40;
-const FOG_FAR = 220;
+const SKY_COLOR = '#D8EEF8';
+const FOG_COLOR = '#D8EEF8';
+const FOG_NEAR = 50;
+const FOG_FAR = 250;
 
 const WATER_POSITION: [number, number, number] = [0, -0.35, WORLD_BOUNDS.minZ - 90];
 const WATER_WIDTH = WORLD_BOUNDS.maxX - WORLD_BOUNDS.minX + 220;
@@ -75,12 +75,12 @@ export function Environment({ isMobile }: EnvironmentProps) {
       <color attach="background" args={[SKY_COLOR]} />
 
       <EnvironmentHDRI preset="city" background={false} environmentIntensity={0.4} />
-      <hemisphereLight args={['#bde3ff', '#3a2f28', 0.3]} />
+      <hemisphereLight args={['#D8EEF8', '#8D7B68', 0.6]} />
 
       <directionalLight
         castShadow={!isMobile}
-        position={[50, 80, 30]}
-        intensity={1.2}
+        position={[40, 70, 40]}
+        intensity={1.8}
         color="#FFF5EA"
         shadow-mapSize={isMobile ? [1024, 1024] : [2048, 2048]}
         shadow-camera-left={-120}
