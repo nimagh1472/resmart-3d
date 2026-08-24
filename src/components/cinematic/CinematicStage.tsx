@@ -73,10 +73,16 @@ export function CinematicStage({ onComplete }: CinematicStageProps) {
 
   useEffect(() => {
     if (shouldAutoSkip) return;
-    const previousOverflow = document.body.style.overflow;
+    // This page's scrolling element is the root <html>, not <body> (no
+    // overflow is set on either in globals.css) — locking body alone is a
+    // no-op here; both must be hidden for the lock to actually hold.
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    const previousBodyOverflow = document.body.style.overflow;
+    document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
     return () => {
-      document.body.style.overflow = previousOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+      document.body.style.overflow = previousBodyOverflow;
     };
   }, [shouldAutoSkip]);
 
