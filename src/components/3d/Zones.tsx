@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { RapierRigidBody } from '@react-three/rapier';
 import { useRoleStore } from '@/hooks/useRoleStore';
@@ -12,7 +12,7 @@ interface ZonesProps {
   vehicleRef: React.RefObject<RapierRigidBody>;
 }
 
-export function Zones({ vehicleRef }: ZonesProps) {
+export const Zones = memo(function Zones({ vehicleRef }: ZonesProps) {
   const activeRole = useRoleStore((state) => state.activeRole);
   const completedStations = useRoleStore((state) => state.completedStations);
   const setNearestZoneId = useRoleStore((state) => state.setNearestZoneId);
@@ -57,4 +57,4 @@ export function Zones({ vehicleRef }: ZonesProps) {
         CASHBACK_PICKUPS.map((pickup) => <CashbackPickup key={pickup.id} pickup={pickup} vehicleRef={vehicleRef} />)}
     </>
   );
-}
+});

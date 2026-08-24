@@ -80,9 +80,10 @@ export function Experience() {
   return (
     <Canvas
       key={canvasKey}
-      shadows={isMobile || isDegraded ? false : 'soft'}
+      shadows={false}
       camera={{ position: [20, 18, 20], fov: 42, near: 0.5, far: 800 }}
-      dpr={[1, 1.5]}
+      dpr={[1, 1.25]}
+      performance={{ min: 0.5 }}
       gl={{
         toneMapping: ACESFilmicToneMapping,
         toneMappingExposure: 0.95,
@@ -99,9 +100,10 @@ export function Experience() {
         onDecline={() => setIsDegraded(true)}
         onIncline={() => setIsDegraded(false)}
       />
-      {/* Ties the Canvas's dpr={[1, 1.5]} range to PerformanceMonitor's live
+      {/* Ties the Canvas's dpr={[1, 1.25]} range to PerformanceMonitor's live
           fps sample — resolution scales down automatically once sustained
-          frames drop below the bounds above, and back up once they recover. */}
+          frames drop below the bounds above, and back up once they recover,
+          on top of the Canvas's own performance.min-driven scaling. */}
       <AdaptiveDpr pixelated={false} />
       <Suspense fallback={null}>
         <Physics gravity={[0, -9.81, 0]}>

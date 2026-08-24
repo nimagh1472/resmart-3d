@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider, type RapierRigidBody } from '@react-three/rapier';
 import confetti from 'canvas-confetti';
@@ -303,7 +303,7 @@ interface TrafficObstaclesProps {
  * on contact, so these bounce/tumble/topple naturally when clipped without
  * the vehicle's own motion ever being affected by them.
  */
-export function TrafficObstacles({ vehicleRef }: TrafficObstaclesProps) {
+export const TrafficObstacles = memo(function TrafficObstacles({ vehicleRef }: TrafficObstaclesProps) {
   return (
     <>
       {CONE_POSITIONS.map((position, index) => (
@@ -321,4 +321,4 @@ export function TrafficObstacles({ vehicleRef }: TrafficObstaclesProps) {
       <EasterEggGem vehicleRef={vehicleRef} />
     </>
   );
-}
+});

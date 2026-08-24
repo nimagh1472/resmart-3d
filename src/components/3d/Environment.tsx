@@ -6,6 +6,7 @@ import { EffectComposer, SSAO, Bloom, Vignette } from '@react-three/postprocessi
 import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Sky } from '@react-three/drei';
 import { Color, Vector3, type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
+import { useRoleStore } from '@/hooks/useRoleStore';
 
 /** Low-core-count devices (old phones, budget laptops) get the same "skip SSAO" treatment as mobile, even on desktop Chrome. */
 function detectLowEndGpu(): boolean {
@@ -94,24 +95,14 @@ export const Environment = memo(function Environment({ isMobile }: EnvironmentPr
 
       <EnvironmentHDRI preset="sunset" background={false} environmentIntensity={0.5} />
       <hemisphereLight args={['#FFD8A8', '#8D7B68', 0.55]} />
+      {/* Flat ambient fill — Canvas-level shadows={false} (Experience.tsx) drops the
+          real-time shadow map pipeline entirely, so this (plus the single sun light
+          below) carries scene fill instead of relying on shadow-side bounce light. */}
+      <ambientLight intensity={1.5} />
 
-      <directionalLight
-        castShadow={!isMobile}
-        position={SUN_DIRECTION}
-        intensity={1.2}
-        color="#FFB066"
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-40}
-        shadow-camera-right={40}
-        shadow-camera-top={40}
-        shadow-camera-bottom={-40}
-        shadow-camera-near={1}
-        shadow-camera-far={260}
-        shadow-bias={-0.0003}
-        shadow-normalBias={0.02}
-      />
-      {/* Cool rim/fill from the opposite side so shadow faces don't go fully black under the low warm sun. */}
-      <directionalLight position={[-50, 30, 40]} intensity={0.35} color="#6FA8D8" />
+      {/* Single static "sun" directional light, no shadow map — see Experience.tsx's
+          Canvas shadows={false}. */}
+      <directionalLight position={SUN_DIRECTION} intensity={1.2} color="#FFB066" />
 
       <fog attach="fog" args={[FOG_COLOR, FOG_NEAR, FOG_FAR]} />
 
@@ -155,9 +146,13 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
   const geometryRef = useRef<PlaneGeometry>(null);
   const basePositions = useRef<Float32Array | null>(null);
   const segments = isMobile ? 16 : 56;
+  const isOverlayOpen = useRoleStore((state) => state.isLeadModalOpen || state.isQuickDeckOpen);
 
   useFrame((state) => {
-    if (isMobile) return;
+    // Skip the per-vertex ripple recompute below while a modal/overlay sits
+    // on top of the canvas — it's a purely decorative background element the
+    // player can't see clearly (or interact with) behind an open overlay.
+    if (isMobile || isOverlayOpen) return;
     const geometry = geometryRef.current;
     if (!geometry) return;
 
@@ -182,7 +177,7 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
   });
 
   return (
-    <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry ref={geometryRef} args={[WATER_WIDTH, WATER_DEPTH, segments, segments]} />
       {isMobile ? (
         <meshStandardMaterial color="#0a3b42" roughness={0.15} metalness={0.4} transparent opacity={0.85} />
