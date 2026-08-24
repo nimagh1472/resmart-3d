@@ -116,6 +116,14 @@ export const DISTRICTS: DistrictMetrics[] = [
 export const DEFAULT_DISTRICT_ID: DistrictId = 'downtown';
 
 /**
+ * Network-wide founding target — distinct from DISTRICTS[].merchantDensity
+ * (today's live per-district figures, ~1,575 combined). Surfaced as its own
+ * static headline stat in the Network Effect scene, alongside — not instead
+ * of — the interactive per-district breakdown.
+ */
+export const MERCHANT_NETWORK_TARGET = 500;
+
+/**
  * Waitlist urgency pools for Merchant/Driver — `baseClaimed` seeds a
  * realistic "already filling up" starting count (so the counter never opens
  * at a suspicious 0/50); live submissions on top of this come from

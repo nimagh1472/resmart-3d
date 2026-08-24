@@ -16,8 +16,12 @@ const PERSONA_CONTENT: Record<LeadRole, { headline: string; cta: string }> = {
   investor: { headline: 'The AI commerce & logistics infrastructure for Dubai', cta: 'REQUEST PRIVATE DATA ROOM ACCESS' },
 };
 
-function scrollToLeadCapture() {
-  document.getElementById('lead-capture')?.scrollIntoView({ behavior: 'smooth' });
+const STAGE_ONE_TAGLINE = 'The city never stops moving.';
+
+/** Driver's form lives in its own Scene 05 anchor; Shopper/Merchant share Scene 04's. */
+function scrollToLeadCapture(role: Exclude<LeadRole, 'investor'>) {
+  const anchorId = role === 'driver' ? 'lead-capture-driver' : 'lead-capture';
+  document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth' });
 }
 
 interface HeroProps {
@@ -40,19 +44,23 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
 
   const handlePrimaryCtaClick = () => {
     if (isInvestor) onOpenInvestorAccess();
-    else scrollToLeadCapture();
+    else scrollToLeadCapture(persona as Exclude<LeadRole, 'investor'>);
   };
 
   const handleSelectPersona = (role: LeadRole) => {
     onSelectPersona(role);
     if (role === 'investor') onOpenInvestorAccess();
-    else scrollToLeadCapture();
+    else scrollToLeadCapture(role);
   };
 
   return (
     <section className="relative flex w-full flex-col items-center px-4 py-10 sm:py-16">
       <div className="glass-panel w-full max-w-3xl rounded-3xl p-6 sm:p-10">
-        <div className="flex items-center justify-center gap-2 text-cyan-300">
+        <div className="text-center text-[10px] font-semibold uppercase tracking-[0.3em] text-cyan-300">
+          Scene 01 — Dubai
+        </div>
+
+        <div className="mt-3 flex items-center justify-center gap-2 text-cyan-300">
           <Gem size={16} />
           <span className="text-xs font-semibold uppercase tracking-[0.25em]">ReSmart AI</span>
           <Gem size={16} />
@@ -65,7 +73,8 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
         <h1 className="mt-3 text-center font-serif text-3xl tracking-tight text-white sm:text-5xl">
           {content.headline}
         </h1>
-        <p className="mx-auto mt-2 max-w-xl text-center text-base font-medium text-cyan-200 sm:text-lg">
+        <p className="mx-auto mt-2 max-w-xl text-center text-sm italic text-slate-300 sm:text-base">{STAGE_ONE_TAGLINE}</p>
+        <p className="mx-auto mt-1 max-w-xl text-center text-base font-medium text-cyan-200 sm:text-lg">
           Search Smarter. Buy Locally. Deliver Intelligently.
         </p>
 

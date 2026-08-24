@@ -79,10 +79,20 @@ async function submitLead(lead: LeadPayload) {
   confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 }, colors: ['#22c55e', '#D4AF37', '#00F5D4'] });
 }
 
+const ALL_FORM_ROLES: FormRole[] = ['shopper', 'merchant', 'driver'];
+
 interface LeadCaptureCardProps {
   persona: LeadRole;
   onSelectPersona: (role: LeadRole) => void;
   selectedDistrict: DistrictId;
+  /**
+   * Which tabs this instance renders. Defaults to all 3 (single unified
+   * card). The 7-scene storyboard (app/page.tsx) mounts this twice instead —
+   * ['shopper', 'merchant'] embedded in the Commerce scene, ['driver'] embedded
+   * in the Logistics scene — each instance keeping its own independent form
+   * field state and its own scroll anchor (see `anchorId` below).
+   */
+  visibleRoles?: FormRole[];
 }
 
 /**
@@ -93,8 +103,13 @@ interface LeadCaptureCardProps {
  * sync. Investor has no tab here at all; it's a confidential request handled
  * entirely by the header button / Hero CTA opening the Investor Access modal.
  */
-export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: LeadCaptureCardProps) {
-  const [lastFormRole, setLastFormRole] = useState<FormRole>('shopper');
+export function LeadCaptureCard({
+  persona,
+  onSelectPersona,
+  selectedDistrict,
+  visibleRoles = ALL_FORM_ROLES,
+}: LeadCaptureCardProps) {
+  const [lastFormRole, setLastFormRole] = useState<FormRole>(visibleRoles[0]);
   const [email, setEmail] = useState('');
   const [storeName, setStoreName] = useState('');
   const [businessContact, setBusinessContact] = useState('');
@@ -106,10 +121,13 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
   const [shareModalRole, setShareModalRole] = useState<FormRole | null>(null);
 
   useEffect(() => {
-    if (persona !== 'investor') setLastFormRole(persona);
+    if (visibleRoles.includes(persona as FormRole)) setLastFormRole(persona as FormRole);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [persona]);
 
-  const activeTab: FormRole = persona === 'investor' ? lastFormRole : persona;
+  const activeTab: FormRole = visibleRoles.includes(persona as FormRole) ? (persona as FormRole) : lastFormRole;
+  const visibleTabs = ROLE_TABS.filter((tab) => visibleRoles.includes(tab.role));
+  const anchorId = visibleRoles.length === 1 ? `lead-capture-${visibleRoles[0]}` : 'lead-capture';
 
   const recordSubmission = useUserProfileStore((state) => state.recordSubmission);
   const hasSubmitted = useUserProfileStore((state) => state.hasSubmitted);
@@ -145,31 +163,33 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
   };
 
   return (
-    <section id="lead-capture" className="w-full px-4 py-12 sm:py-16">
+    <section id={anchorId} className="w-full px-4 py-12 sm:py-16">
       <div className="glass-panel mx-auto w-full max-w-2xl rounded-3xl p-6 sm:p-8">
         <h2 className="text-center text-xl font-semibold text-white sm:text-2xl">Join the ReSmart AI Launch</h2>
         <p className="mt-1 text-center text-sm text-neutral-400">
           Pick how you&apos;d like to join Dubai&apos;s first AI commerce &amp; logistics network.
         </p>
 
-        <div className="mx-auto mt-5 grid max-w-md grid-cols-3 gap-1.5">
-          {ROLE_TABS.map(({ role, label, icon: Icon }) => (
-            <button
-              key={role}
-              type="button"
-              onClick={() => onSelectPersona(role)}
-              className={clsx(
-                'flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition',
-                activeTab === role
-                  ? 'border-cyan-400/60 bg-cyan-400/10 text-white'
-                  : 'border-white/10 bg-white/5 text-neutral-400 hover:border-white/20',
-              )}
-            >
-              <Icon size={16} />
-              {label}
-            </button>
-          ))}
-        </div>
+        {visibleTabs.length > 1 && (
+          <div className={clsx('mx-auto mt-5 grid max-w-md gap-1.5', visibleTabs.length === 2 ? 'grid-cols-2' : 'grid-cols-3')}>
+            {visibleTabs.map(({ role, label, icon: Icon }) => (
+              <button
+                key={role}
+                type="button"
+                onClick={() => onSelectPersona(role)}
+                className={clsx(
+                  'flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition',
+                  activeTab === role
+                    ? 'border-cyan-400/60 bg-cyan-400/10 text-white'
+                    : 'border-white/10 bg-white/5 text-neutral-400 hover:border-white/20',
+                )}
+              >
+                <Icon size={16} />
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mt-6">
           {hasSubmitted(activeTab) ? (

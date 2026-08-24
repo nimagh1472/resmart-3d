@@ -7,20 +7,21 @@ const VIDEO_SRC = '/assets/cyber-dubai-loop.mp4';
 
 interface BackgroundVideoProps {
   persona?: LeadRole;
+  /** True while Scene 07 (Investor Terminal) is scrolled into view — see app/page.tsx. */
+  investorSceneInView?: boolean;
 }
 
 /**
  * Full-viewport looping background video — replaces the old Three.js ambient
  * skyline canvas. Falls back to a static gradient if the source is missing
- * or fails to load. The vignette overlay's tint shifts when `persona` is
- * 'investor' (a warm gold cast, signalling the "Private Intelligence
- * Terminal" environment) vs. the default teal-tinted obsidian cast for
- * Shopper/Merchant/Driver — a lightweight stand-in for a full spatial
- * environment switch.
+ * or fails to load. The vignette overlay's tint shifts to a warm gold cast
+ * (the "Private Intelligence Terminal" environment) when either the
+ * persona switcher is set to 'investor' OR the visitor has scrolled into
+ * Scene 07 — vs. the default teal-tinted obsidian cast otherwise.
  */
-export function BackgroundVideo({ persona }: BackgroundVideoProps) {
+export function BackgroundVideo({ persona, investorSceneInView }: BackgroundVideoProps) {
   const [hasError, setHasError] = useState(false);
-  const isInvestor = persona === 'investor';
+  const isInvestor = persona === 'investor' || Boolean(investorSceneInView);
 
   return (
     <>
