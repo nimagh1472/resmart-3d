@@ -22,10 +22,16 @@ export function BackgroundVideo() {
           loop
           muted
           playsInline
+          preload="auto"
+          // iOS Safari ignores the camelCase `playsInline` prop on some
+          // versions unless the lowercase webkit attribute is also present.
+          webkit-playsinline="true"
+          disablePictureInPicture
           className="fixed inset-0 z-0 h-full w-full object-cover pointer-events-none opacity-40"
-          src={VIDEO_SRC}
           onError={() => setHasError(true)}
-        />
+        >
+          <source src={VIDEO_SRC} type="video/mp4" />
+        </video>
       )}
       <div className="pointer-events-none fixed inset-0 z-10 bg-gradient-to-b from-black/60 via-transparent to-[#0A0D0F]" />
     </>

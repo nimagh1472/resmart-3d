@@ -38,7 +38,7 @@ export default function Home() {
     <>
       <BackgroundVideo />
 
-      <main className="relative z-20 min-h-screen w-full overflow-x-hidden bg-asphalt">
+      <main className="relative z-20 min-h-screen w-full overflow-x-hidden">
         <div className="flex flex-col items-center">
           <StickyHeader onOpenInvestorAccess={openInvestorAccess} />
           <Hero persona={persona} onSelectPersona={setPersona} onOpenInvestorAccess={openInvestorAccess} />
