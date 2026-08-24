@@ -168,6 +168,88 @@ function SkylineGlowSphereGroup({ color, buildings }: { color: string; buildings
   );
 }
 
+const TRAFFIC_LANE_X_OFFSETS = [-9, -6, -3, 3, 6, 9];
+const TRAFFIC_PARTICLES_PER_LANE = 6;
+const TRAFFIC_LANE_LENGTH = 220;
+const TRAFFIC_STREAK_LENGTH = 3.4;
+const TRAFFIC_SPEED = 24; // units/sec — fast highway motion the camera flies over
+const TRAFFIC_Y = 0.18;
+
+interface TrafficParticleConfig {
+  laneX: number;
+  color: string;
+  phase: number;
+}
+
+function buildTrafficParticles(): TrafficParticleConfig[] {
+  return TRAFFIC_LANE_X_OFFSETS.flatMap((laneX, laneIndex) => {
+    const color = SKYLINE_NEON_COLORS[laneIndex % SKYLINE_NEON_COLORS.length];
+    return Array.from({ length: TRAFFIC_PARTICLES_PER_LANE }, (_, index) => ({
+      laneX,
+      color,
+      phase: (index / TRAFFIC_PARTICLES_PER_LANE) * TRAFFIC_LANE_LENGTH,
+    }));
+  });
+}
+
+const TRAFFIC_PARTICLES = buildTrafficParticles();
+
+function groupTrafficParticlesByColor(): Array<{ color: string; particles: TrafficParticleConfig[] }> {
+  const groups = new Map<string, TrafficParticleConfig[]>();
+  TRAFFIC_PARTICLES.forEach((particle) => {
+    const list = groups.get(particle.color);
+    if (list) list.push(particle);
+    else groups.set(particle.color, [particle]);
+  });
+  return Array.from(groups, ([color, particles]) => ({ color, particles }));
+}
+
+const TRAFFIC_GROUPS = groupTrafficParticlesByColor();
+
+/**
+ * One lane-color's worth of Sheikh Zayed Road traffic streaks, rendered as a
+ * single InstancedMesh whose per-instance Z wraps every TRAFFIC_LANE_LENGTH
+ * units (state updated in useFrame, unlike the static skyline instances
+ * above) so a small fixed pool of streaks reads as continuous fast-moving
+ * highway traffic flowing under the camera's flight path.
+ */
+function TrafficLaneGroup({ color, particles }: { color: string; particles: TrafficParticleConfig[] }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  useFrame((state) => {
+    const mesh = meshRef.current;
+    if (!mesh) return;
+    const elapsed = state.clock.elapsedTime;
+    particles.forEach((particle, index) => {
+      const z = ((particle.phase + elapsed * TRAFFIC_SPEED) % TRAFFIC_LANE_LENGTH) - TRAFFIC_LANE_LENGTH / 2;
+      dummy.position.set(particle.laneX, TRAFFIC_Y, z);
+      dummy.scale.set(0.4, 0.14, TRAFFIC_STREAK_LENGTH);
+      dummy.updateMatrix();
+      mesh.setMatrixAt(index, dummy.matrix);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, particles.length]}>
+      <boxGeometry args={[1, 1, 1]} />
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={3} toneMapped={false} />
+    </instancedMesh>
+  );
+}
+
+/** Neon gold/cyan traffic streams racing along Sheikh Zayed Road's lanes beneath the camera's flight path. */
+function TrafficStreams() {
+  return (
+    <>
+      {TRAFFIC_GROUPS.map((group) => (
+        <TrafficLaneGroup key={group.color} color={group.color} particles={group.particles} />
+      ))}
+    </>
+  );
+}
+
 interface TowerSegmentConfig {
   width: number;
   depth: number;
@@ -440,18 +522,20 @@ interface WorldProps {
 }
 
 /**
- * Minimal glowing Dubai skyline backdrop: a Burj Khalifa-style central
- * tower silhouette ringed by a light decorative skyline, ambient "AI
- * network" particle motes, per-district glow zones tied to the
- * DistrictSelector UI, and the looping NetworkPulse. Functional, not purely
- * decorative — the glow zones and pulse visualize real page state/product
- * mechanics rather than just filling space. No driving, no physics.
+ * Cyber-Dubai skyline backdrop: a Burj Khalifa-style central tower
+ * silhouette ringed by a light decorative skyline, neon gold/cyan traffic
+ * streams racing along Sheikh Zayed Road, ambient "AI network" particle
+ * motes, per-district glow zones tied to the DistrictSelector UI, and the
+ * looping NetworkPulse. Functional, not purely decorative — the glow zones
+ * and pulse visualize real page state/product mechanics rather than just
+ * filling space. No driving, no physics.
  */
 export const World = memo(function World({ isMobile, selectedDistrict, hoveredDistrict }: WorldProps) {
   return (
     <>
       <CentralTower />
       {!isMobile && <AINodeParticles />}
+      {!isMobile && <TrafficStreams />}
       <SkylineBuildings />
       <DistrictGlowZones selectedDistrict={selectedDistrict} hoveredDistrict={hoveredDistrict} />
       <NetworkPulse />

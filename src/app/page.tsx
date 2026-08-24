@@ -5,6 +5,8 @@ import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { StickyHeader } from '@/components/ui/StickyHeader';
 import { Hero } from '@/components/ui/Hero';
+import { StoryCards } from '@/components/ui/StoryCards';
+import { RegistrationHubs } from '@/components/ui/RegistrationHubs';
 import { NetworkFlowStrip } from '@/components/ui/NetworkFlowStrip';
 import { LeadCaptureCard } from '@/components/ui/LeadCaptureCard';
 import { DistrictSelector } from '@/components/ui/DistrictSelector';
@@ -22,13 +24,16 @@ const AmbientScene = dynamic(() => import('@/components/3d/AmbientScene').then((
 
 /**
  * Single continuous landing page. The ambient 3D skyline is a fixed,
- * non-interactive backdrop behind the actual content (header, hero,
- * network-pulse strip, lead-capture card, district selector, how-it-works
- * cards, footer). A single shared `persona` state (seeded by
- * useIntentPersona's ?ref=/?inv= dynamic intent routing) drives Hero's CTA +
- * persona switcher and LeadCaptureCard's active tab together; Investor
- * Access is a hard-gated modal reachable only from the header button or the
- * Hero CTA/persona switcher when persona === 'investor'.
+ * non-interactive backdrop (a cinematic fly-in over neon Sheikh Zayed Road
+ * traffic, settling into an orbit around the Burj Khalifa-style tower)
+ * behind the actual content (header, hero, storytelling cards,
+ * registration hubs, network-pulse strip, lead-capture card, district
+ * selector, how-it-works cards, footer). A single shared `persona` state
+ * (seeded by useIntentPersona's ?ref=/?inv= dynamic intent routing) drives
+ * Hero's CTA + persona switcher, RegistrationHubs, and LeadCaptureCard's
+ * active tab together; Investor Access is a hard-gated modal reachable from
+ * the header button, the Hero CTA/persona switcher, or RegistrationHubs'
+ * Investor card.
  */
 export default function Home() {
   const initialPersona = useIntentPersona();
@@ -49,6 +54,8 @@ export default function Home() {
       <div className="relative z-10 flex flex-col items-center">
         <StickyHeader onOpenInvestorAccess={openInvestorAccess} />
         <Hero persona={persona} onSelectPersona={setPersona} onOpenInvestorAccess={openInvestorAccess} />
+        <StoryCards />
+        <RegistrationHubs onSelectPersona={setPersona} onOpenInvestorAccess={openInvestorAccess} />
         <NetworkFlowStrip />
         <LeadCaptureCard persona={persona} onSelectPersona={setPersona} selectedDistrict={selectedDistrict} />
         <DistrictSelector
