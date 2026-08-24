@@ -11,13 +11,26 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        // Dubai Cyber-Luxury brand palette — use these instead of ad-hoc
-        // neutral-950/rgba(...) literals for HUD chrome and modal surfaces,
-        // so every glass panel/scrim in the app shares one source of truth.
-        asphalt: "#0A0D0F", // Deep Obsidian Slate — background + modal scrim tint
-        neonCyan: "#00E5FF", // Electric Cyan
-        gold: "#D4AF37", // Brushed Gold — secondary accent
-        darkGlass: "#0F172A", // Translucent Dark Cyber-Glass base — use with /85 opacity, e.g. bg-darkGlass/85
+        // Dubai Intelligent Luxury brand palette — use these instead of
+        // ad-hoc neutral-950/rgba(...) literals for HUD chrome and modal
+        // surfaces, so every material tier in the app shares one source of
+        // truth. `gold` is restricted by convention to Investor/Founding
+        // badges and CTAs only — never generic cards or gradients.
+        asphalt: "#050709", // Obsidian Black — background + modal scrim tint
+        intelTeal: "#00F5D4", // Intelligent Teal — AI/logistics data-stream accent
+        gold: "#D4AF37", // Champagne Gold — Investor/Founding-badge accent ONLY
+        darkGlass: "#0F172A", // Legacy translucent glass base — superseded by the .tier-* material classes in globals.css
+        // The stock `cyan-*` scale is retuned to ramp around Intelligent
+        // Teal (#00F5D4) so every existing `text-cyan-300`,
+        // `border-cyan-400/60`, etc. across the app picks up the new brand
+        // accent without a per-component find/replace.
+        cyan: {
+          200: "#7FFCE8",
+          300: "#4DF9DE",
+          400: "#00F5D4",
+          500: "#00D9BB",
+          950: "#032A24",
+        },
       },
     },
   },

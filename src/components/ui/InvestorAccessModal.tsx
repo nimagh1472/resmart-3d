@@ -134,7 +134,7 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
 
   return (
     <div className="pointer-events-auto hud-scrim absolute inset-0 z-50 flex items-center justify-center p-4">
-      <div className="animate-modal-in glass-panel max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-5">
+      <div className="animate-modal-in tier-3-panel max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl p-5">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-white">Investor Access</h3>
           <button
@@ -263,7 +263,7 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
                 <li key={metric.label} className="border-b border-white/10 pb-2 last:border-none">
                   <div className="flex items-baseline justify-between gap-2">
                     <span className="min-w-0 truncate text-sm text-neutral-300">{metric.label}</span>
-                    <span className="shrink-0 text-sm font-semibold text-white">{formatValue(metric.value)}</span>
+                    <span className="shrink-0 font-mono text-sm font-semibold text-white">{formatValue(metric.value)}</span>
                   </div>
                   <p className="mt-0.5 text-xs text-neutral-400">{metric.assumption}</p>
                 </li>
@@ -289,7 +289,7 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
                     <div key={key}>
                       <div className="flex items-center justify-between text-[11px] text-neutral-300">
                         <span>{SLIDER_LABELS[key]}</span>
-                        <span className="font-semibold text-white">{inputs[key].toLocaleString()}</span>
+                        <span className="font-mono font-semibold text-white">{inputs[key].toLocaleString()}</span>
                       </div>
                       <input
                         type="range"
@@ -307,15 +307,15 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
               <div className="mt-3 grid grid-cols-3 gap-2 text-center">
                 <div className="rounded-lg bg-white/5 p-2">
                   <div className="text-[10px] uppercase tracking-wide text-neutral-400">Projected ARR</div>
-                  <div className="text-sm font-semibold text-white">{formatAed(scenarioResult.projectedArrAed)}</div>
+                  <div className="font-mono text-sm font-semibold text-white">{formatAed(scenarioResult.projectedArrAed)}</div>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
                   <div className="text-[10px] uppercase tracking-wide text-neutral-400">Est. Runway</div>
-                  <div className="text-sm font-semibold text-white">{scenarioResult.estimatedRunwayMonths.toFixed(1)} mo</div>
+                  <div className="font-mono text-sm font-semibold text-white">{scenarioResult.estimatedRunwayMonths.toFixed(1)} mo</div>
                 </div>
                 <div className="rounded-lg bg-white/5 p-2">
                   <div className="text-[10px] uppercase tracking-wide text-neutral-400">ARR Coverage</div>
-                  <div className="text-sm font-semibold text-gold">{scenarioResult.arrCoverageMultiple.toFixed(1)}x</div>
+                  <div className="font-mono text-sm font-semibold text-gold">{scenarioResult.arrCoverageMultiple.toFixed(1)}x</div>
                 </div>
               </div>
             </div>

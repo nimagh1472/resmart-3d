@@ -51,7 +51,7 @@ export function RevenueEngine() {
                 <Icon size={16} />
               </div>
               <h3 className="mt-3 text-sm font-semibold text-white">{label}</h3>
-              <span className="mt-0.5 inline-block rounded-full border border-gold/25 bg-gold/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-gold/80">
+              <span className="mt-0.5 inline-block rounded-full border border-cyan-400/25 bg-cyan-400/5 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-cyan-300">
                 {mechanism}
               </span>
               <p className="mt-2 text-[11px] leading-relaxed text-neutral-400">{description}</p>

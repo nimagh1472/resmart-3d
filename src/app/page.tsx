@@ -39,7 +39,7 @@ export default function Home() {
 
   return (
     <>
-      <BackgroundVideo />
+      <BackgroundVideo persona={persona} />
 
       <main className="relative z-20 min-h-screen w-full overflow-x-hidden">
         <div className="flex flex-col items-center">

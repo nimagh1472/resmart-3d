@@ -76,7 +76,7 @@ async function submitLead(lead: LeadPayload) {
     }
   }
 
-  confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 }, colors: ['#22c55e', '#D4AF37', '#00E5FF'] });
+  confetti({ particleCount: 120, spread: 90, origin: { y: 0.6 }, colors: ['#22c55e', '#D4AF37', '#00F5D4'] });
 }
 
 interface LeadCaptureCardProps {
@@ -178,7 +178,7 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
               <p className="text-sm text-emerald-200">You&apos;re on the list — share your link to jump the queue.</p>
               <button
                 onClick={() => setShareModalRole(activeTab)}
-                className="rounded-full bg-gradient-to-r from-cyan-400 to-gold px-5 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
+                className="rounded-full bg-cyan-400 px-5 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
               >
                 Open My Share Link
               </button>
@@ -205,7 +205,7 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
+                className="w-full rounded-full bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
               >
                 {isSubmitting ? 'Submitting…' : 'Secure My Voucher Spot'}
               </button>
@@ -259,7 +259,7 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
+                className="w-full rounded-full bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
               >
                 {isSubmitting ? 'Submitting…' : 'Claim Founding Merchant Slot'}
               </button>
@@ -316,7 +316,7 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
+                className="w-full rounded-full bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
               >
                 {isSubmitting ? 'Submitting…' : 'Claim Zero-Commission Slot'}
               </button>

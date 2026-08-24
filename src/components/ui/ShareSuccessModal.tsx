@@ -124,7 +124,7 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
           <X size={18} />
         </button>
 
-        <div className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#03141c] via-[#04222c] to-[#031017] p-6 shadow-[0_0_40px_rgba(34,211,238,0.15)]">
+        <div className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#03141c] via-[#04222c] to-[#031017] p-6 shadow-[0_0_40px_rgba(0,245,212,0.15)]">
           <div className="flex items-center justify-center gap-2 text-cyan-300">
             <Gem size={16} />
             <span className="text-xs font-semibold uppercase tracking-[0.25em]">ReSmart AI</span>
@@ -139,15 +139,15 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
         </div>
 
         {role === 'shopper' && (
-          <div className="mt-4 rounded-xl border border-gold/25 bg-gold/5 p-3">
-            <p className="text-center text-xs font-medium text-gold">
+          <div className="mt-4 rounded-xl border border-cyan-400/25 bg-cyan-400/5 p-3">
+            <p className="text-center text-xs font-medium text-cyan-300">
               {hasReachedTopTier
                 ? `You're in the ${topTierLabel} rank!`
                 : `Invite ${invitesNeeded} more friend${invitesNeeded === 1 ? '' : 's'} → Unlock ${topTierLabel} Rank (#${entry.waitlistPosition} → #${projectedPosition})`}
             </p>
             <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-gold transition-all"
+                className="h-full rounded-full bg-cyan-400 transition-all"
                 style={{
                   width: `${Math.min(100, Math.max(4, (1 - entry.waitlistPosition / SHOPPER_RANK_CONFIG.seedRangeMax) * 100))}%`,
                 }}
@@ -169,7 +169,7 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
             rel="noopener noreferrer"
             onClick={handleWhatsappShareClick}
             aria-disabled={!whatsappShareUrl}
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-cyan-400 px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
           >
             <MessageCircle size={14} /> Share on WhatsApp
           </a>

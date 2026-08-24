@@ -3,7 +3,11 @@
 import { ArrowRight, Gem, MapPin, Timer } from 'lucide-react';
 import { LAUNCH_TIMESTAMP, padCountdownValue, useCountdown } from '@/hooks/useCountdown';
 import { PersonaSwitcher } from '@/components/ui/PersonaSwitcher';
+import { AiIntentSearch } from '@/components/ui/AiIntentSearch';
+import { PersonaContextPanel } from '@/components/ui/PersonaContextPanel';
 import type { LeadRole } from '@/types';
+
+const STRUCTURAL_MOTTO = 'THE INTELLIGENCE LAYER FOR DUBAI COMMERCE.';
 
 const PERSONA_CONTENT: Record<LeadRole, { headline: string; cta: string }> = {
   shopper: { headline: 'Find local deals in seconds', cta: 'CLAIM AED 500 FOUNDING VOUCHER' },
@@ -48,13 +52,17 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
   return (
     <section className="relative flex w-full flex-col items-center px-4 py-10 sm:py-16">
       <div className="glass-panel w-full max-w-3xl rounded-3xl p-6 sm:p-10">
-        <div className="flex items-center justify-center gap-2 text-gold">
+        <div className="flex items-center justify-center gap-2 text-cyan-300">
           <Gem size={16} />
           <span className="text-xs font-semibold uppercase tracking-[0.25em]">ReSmart AI</span>
           <Gem size={16} />
         </div>
 
-        <h1 className="mt-4 text-center text-2xl font-semibold leading-tight text-white sm:text-4xl">
+        <p className="mx-auto mt-3 max-w-md text-center text-[10px] font-light uppercase tracking-[0.2em] text-slate-300 sm:text-xs">
+          {STRUCTURAL_MOTTO}
+        </p>
+
+        <h1 className="mt-3 text-center font-serif text-3xl tracking-tight text-white sm:text-5xl">
           {content.headline}
         </h1>
         <p className="mx-auto mt-2 max-w-xl text-center text-base font-medium text-cyan-200 sm:text-lg">
@@ -69,7 +77,9 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
           <span className="rounded-full border border-cyan-400/25 bg-cyan-400/5 px-3 py-1">SMART LOGISTICS</span>
         </div>
 
-        <div className="mx-auto mt-2 flex items-center justify-center gap-1.5 text-xs text-cyan-300/80">
+        <AiIntentSearch />
+
+        <div className="mx-auto mt-3 flex items-center justify-center gap-1.5 text-xs text-cyan-300/80">
           <MapPin size={12} /> Downtown Dubai · Sheikh Mohammed bin Rashid Boulevard
         </div>
 
@@ -98,13 +108,19 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
         <div className="mx-auto mt-8 flex justify-center">
           <button
             onClick={handlePrimaryCtaClick}
-            className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-cyan-500/20 transition hover:opacity-90 sm:text-base"
+            className={
+              isInvestor
+                ? 'flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-gold/90 to-gold px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-[0_0_20px_rgba(212,175,55,0.35)] transition hover:opacity-90 sm:text-base'
+                : 'flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-cyan-400 px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-cyan-500/20 transition hover:opacity-90 sm:text-base'
+            }
           >
             {content.cta} <ArrowRight size={16} />
           </button>
         </div>
 
         <PersonaSwitcher persona={persona} onSelectPersona={handleSelectPersona} />
+
+        <PersonaContextPanel persona={persona} onOpenInvestorAccess={onOpenInvestorAccess} />
 
         <p className="mx-auto mt-6 max-w-md text-center text-[11px] leading-relaxed text-neutral-500">
           ReSmart AI Launchpad Demo. Not an offer of securities.

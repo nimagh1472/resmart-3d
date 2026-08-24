@@ -3,12 +3,12 @@
 @tailwind utilities;
 
 /*
- * Dubai Ultra-Luxury Cyber-Glass — fixed dark brand theme (not
+ * Dubai Intelligent Luxury — fixed dark brand theme (not
  * system-theme-aware: this is a pitch experience, not a themable app).
  */
 :root {
-  --background: #0a0d0f;
-  --foreground: #e5e7eb;
+  --background: #050709;
+  --foreground: #f8fafc;
 }
 
 html,
@@ -26,31 +26,51 @@ body {
 }
 
 /*
- * Shared glass-chrome primitives — every HUD panel/pill/scrim in the app
- * should build on one of these three instead of re-typing its own
- * border/blur/shadow combo, so the "translucent dark cyber-glass with a thin
- * glowing cyan border" look stays consistent across ~20 components.
+ * 4-Tier Material System — replaces the old uniform "translucent glass with
+ * a glowing cyan border" look with a deliberate hierarchy. Every HUD
+ * panel/pill/scrim/card in the app should build on one of these instead of
+ * re-typing its own border/blur/shadow combo.
+ *   Tier 1 .tier-1-nav      — Navigation & persona tabs: translucent glass
+ *   Tier 2 .glass-panel     — Interactive cards: semi-opaque dark material
+ *   Tier 3 .tier-3-panel    — Investor / Private Terminal: solid metallic
+ *                             obsidian with a restrained gold hairline
+ *   Tier 4                  — Primary CTAs: solid high-contrast accent
+ *                             surfaces, applied inline per-button (teal for
+ *                             general actions, gold reserved for Investor)
  */
 @layer components {
+  .tier-1-nav {
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
   .glass-panel {
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    background-color: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 25px 50px -12px rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background-color: rgba(11, 15, 20, 0.8);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
   }
 
   .glass-pill {
     border-radius: 9999px;
-    border: 1px solid rgba(0, 229, 255, 0.2);
-    background-color: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    box-shadow: 0 25px 50px -12px rgba(0, 229, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .tier-3-panel {
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    background-color: #0d1117;
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6);
   }
 
   .hud-scrim {
-    background-color: rgba(11, 15, 18, 0.7);
+    background-color: rgba(5, 7, 9, 0.75);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
@@ -100,7 +120,7 @@ body {
   4% {
     opacity: 1;
     transform: scale(1.6);
-    box-shadow: 0 0 10px 2px rgba(0, 229, 255, 0.7);
+    box-shadow: 0 0 10px 2px rgba(0, 245, 212, 0.7);
   }
   8% {
     opacity: 0.35;

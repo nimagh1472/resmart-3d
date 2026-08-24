@@ -72,27 +72,27 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict }: Distric
         <div className="mx-auto mt-5 grid max-w-xl grid-cols-3 gap-3 text-center">
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <Building2 size={16} className="mx-auto text-cyan-300" />
-            <div className="mt-1 text-sm font-semibold text-white">{activeDistrict.merchantDensity}</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-white">{activeDistrict.merchantDensity}</div>
             <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
               Merchant Launch Network
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <Gauge size={16} className="mx-auto text-cyan-300" />
-            <div className="mt-1 text-sm font-semibold text-white">{activeDistrict.aiRouteEfficiencyPct}%</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-white">{activeDistrict.aiRouteEfficiencyPct}%</div>
             <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
               Benchmark Route Efficiency
             </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <TrendingUp size={16} className="mx-auto text-cyan-300" />
-            <div className="mt-1 text-sm font-semibold text-white">{formatGmv(activeDistrict.regionalGmvAed)}</div>
+            <div className="mt-1 font-mono text-sm font-semibold text-white">{formatGmv(activeDistrict.regionalGmvAed)}</div>
             <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
               Addressable GMV Model
             </div>
           </div>
         </div>
-        <div className="mx-auto mt-2 max-w-xl text-center text-[9px] font-semibold uppercase tracking-widest text-gold/60">
+        <div className="mx-auto mt-2 max-w-xl text-center text-[9px] font-semibold uppercase tracking-widest text-slate-500">
           Illustrative Target Model — Not Audited Figures
         </div>
 

@@ -37,8 +37,8 @@ export function GrowthFlywheel() {
           <svg viewBox="0 0 400 400" className="absolute inset-0 h-full w-full" aria-hidden="true">
             <defs>
               <radialGradient id="flywheel-particle-glow" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor="#00E5FF" stopOpacity="1" />
-                <stop offset="100%" stopColor="#00E5FF" stopOpacity="0" />
+                <stop offset="0%" stopColor="#00F5D4" stopOpacity="1" />
+                <stop offset="100%" stopColor="#00F5D4" stopOpacity="0" />
               </radialGradient>
             </defs>
 
@@ -47,7 +47,7 @@ export function GrowthFlywheel() {
               cy="200"
               r="150"
               fill="none"
-              stroke="#00E5FF"
+              stroke="#00F5D4"
               strokeOpacity="0.25"
               strokeWidth="1.5"
               strokeDasharray="4 10"
@@ -67,7 +67,7 @@ export function GrowthFlywheel() {
               style={{ top: `${step.top}%`, left: `${step.left}%` }}
               className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-1"
             >
-              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-cyan-400/40 bg-neutral-950/80 text-[10px] font-semibold text-cyan-300">
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-cyan-400/40 bg-neutral-950/80 font-mono text-[10px] font-semibold text-cyan-300">
                 {index + 1}
               </span>
               <span className="glass-pill max-w-[7.5rem] px-2 py-1 text-center text-[9px] font-semibold uppercase leading-tight tracking-wide text-white sm:text-[10px]">

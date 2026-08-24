@@ -61,7 +61,7 @@ export function RegistrationHubs({ onSelectPersona, onOpenInvestorAccess }: Regi
         <button
           type="button"
           onClick={onOpenInvestorAccess}
-          className="group rounded-2xl border border-gold/25 bg-gold/5 p-6 text-left backdrop-blur-md transition hover:border-gold/50"
+          className="tier-3-panel group rounded-2xl p-6 text-left transition hover:border-gold/50"
         >
           <Briefcase size={22} className="text-gold" />
           <h3 className="mt-3 text-sm font-semibold text-white sm:text-base">Investor Pitch &amp; Confidential Data Room</h3>
