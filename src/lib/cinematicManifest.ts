@@ -39,6 +39,13 @@ export interface MediaSlot {
   optional?: boolean;
   note?: string;
   kenBurns: KenBurns;
+  /**
+   * object-position X (%) to use on narrow/portrait viewports, where
+   * object-fit:cover on this 16:9-ish source shows only ~25-30% of the
+   * original width — cover's default 50% center crop cuts off the named
+   * focal subject for several scenes. Omit to keep the 50% center default.
+   */
+  mobileFocalX?: number;
 }
 
 export interface SceneDefinition {
@@ -62,7 +69,9 @@ export const DUBAI_ESTABLISHING_SHOT: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'Clean night establishing shot, Burj Khalifa + Dubai Fountain + Dubai Mall unmistakable. Scene 02.',
-  kenBurns: { zoomFrom: 1.0, zoomTo: 1.16, panXFrom: 0, panXTo: -2, panYFrom: 0, panYTo: -1.5 },
+  // Slow majestic push into Downtown — restrained zoom, gentle drift toward the tower.
+  kenBurns: { zoomFrom: 1.0, zoomTo: 1.1, panXFrom: 0, panXTo: -1.5, panYFrom: 0, panYTo: -1 },
+  mobileFocalX: 46,
 };
 
 export const VEHICLE_HERO: MediaSlot = {
@@ -72,7 +81,11 @@ export const VEHICLE_HERO: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'ReSmart autonomous vehicle, Downtown Dubai promenade, Burj Khalifa background. Scene 03.',
-  kenBurns: { zoomFrom: 1.08, zoomTo: 1.0, panXFrom: 3, panXTo: 0, panYFrom: 0, panYTo: 0 },
+  // Street-level tracking feel: continues the push-in momentum from Scene 02
+  // (never reverses direction across a cut) with a stronger lateral drift so
+  // the vehicle reads as tracked, not just zoomed.
+  kenBurns: { zoomFrom: 1.02, zoomTo: 1.1, panXFrom: 3, panXTo: -3, panYFrom: 0, panYTo: 0 },
+  mobileFocalX: 30,
 };
 
 export const SHOPPER_INTENT_SHOT: MediaSlot = {
@@ -82,7 +95,9 @@ export const SHOPPER_INTENT_SHOT: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'Shopper with phone, AI search halo (search/deals/cashback/vouchers/nearby). Scene 04.',
-  kenBurns: { zoomFrom: 1.0, zoomTo: 1.1, panXFrom: -1.5, panXTo: 0, panYFrom: 0, panYTo: 0 },
+  // Slower, intimate — the smallest movement in the sequence.
+  kenBurns: { zoomFrom: 1.01, zoomTo: 1.05, panXFrom: -0.5, panXTo: 0.5, panYFrom: 0, panYTo: 0 },
+  mobileFocalX: 62,
 };
 
 export const MERCHANT_ACTIVATION_SHOT: MediaSlot = {
@@ -92,7 +107,9 @@ export const MERCHANT_ACTIVATION_SHOT: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'ReSmart storefront, merchant dashboard + "Merchant Activated", Burj Khalifa background. Scene 05.',
-  kenBurns: { zoomFrom: 1.0, zoomTo: 1.12, panXFrom: 1, panXTo: 0, panYFrom: 0, panYTo: -1 },
+  // Subtle forward movement as the merchant activates — restrained push, minimal pan.
+  kenBurns: { zoomFrom: 1.0, zoomTo: 1.07, panXFrom: 0.5, panXTo: -0.5, panYFrom: 0, panYTo: -0.5 },
+  mobileFocalX: 45,
 };
 
 export const DELIVERY_ROUTE_SHOT: MediaSlot = {
@@ -102,7 +119,10 @@ export const DELIVERY_ROUTE_SHOT: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'ReSmart vehicle in motion, AR route line + waypoint + parcel hologram. Scene 06.',
-  kenBurns: { zoomFrom: 1.0, zoomTo: 1.14, panXFrom: 0, panXTo: -2.5, panYFrom: 0, panYTo: 0 },
+  // Strongest directional movement in the sequence — a clear tracking pan
+  // following the route's momentum, continuing the push-in from Scene 05.
+  kenBurns: { zoomFrom: 1.02, zoomTo: 1.09, panXFrom: 4, panXTo: -4, panYFrom: 0, panYTo: 0 },
+  mobileFocalX: 55,
 };
 
 export const LIVING_NETWORK_SHOT: MediaSlot = {
@@ -112,7 +132,11 @@ export const LIVING_NETWORK_SHOT: MediaSlot = {
   recommendedDimensions: '1672x941',
   recommendedFormat: 'PNG (approved)',
   note: 'Aerial Downtown Dubai, Living AI Network graph fanning from Burj Khalifa. Scenes 07-08.',
-  kenBurns: { zoomFrom: 1.0, zoomTo: 1.28, panXFrom: 0, panXTo: 0, panYFrom: 0.5, panYTo: -1.5 },
+  // Slow aerial expansion: pulls back from a tighter frame on the tower to
+  // reveal the full graph, then — since this window spans both Scene 07 and
+  // Scene 08 and the ease curve decelerates toward its own end — the camera
+  // is already settling by the time Climax plays, without a separate cut.
+  kenBurns: { zoomFrom: 1.1, zoomTo: 0.98, panXFrom: 0, panXTo: 0, panYFrom: 0.8, panYTo: -0.8 },
 };
 
 export const BRAND_MARK_SHOT: MediaSlot = {

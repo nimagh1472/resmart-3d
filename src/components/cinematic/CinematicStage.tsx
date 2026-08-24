@@ -1,13 +1,23 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { SCENES, getSceneAtTime, getSceneProgress, type MediaSlot } from '@/lib/cinematicManifest';
 import { useCinematicClock } from '@/hooks/useCinematicClock';
 import { useCinematicSkip } from '@/hooks/useCinematicSkip';
 import { useCinematicAudio } from '@/hooks/useCinematicAudio';
+import { useIsPortraitViewport } from '@/hooks/useIsPortraitViewport';
 import { MediaLayer } from '@/components/cinematic/MediaLayer';
 import { EffectsOverlay } from '@/components/cinematic/EffectsOverlay';
 import { BrandRevealText } from '@/components/cinematic/BrandRevealText';
+
+// How long the whole stage takes to dissolve away once the film ends (or
+// is skipped) before onComplete actually unmounts it — without this the
+// site underneath simply appears the instant the cinematic vanishes,
+// which reads as "the component disappeared" rather than an intentional
+// handoff. Not used for the auto-skip paths (returning visitor, intent
+// routing, reduced motion) — those visitors should never see the stage at
+// all, so there's nothing to dissolve.
+const OUTRO_FADE_MS = 750;
 
 // Every unique media slot across all scenes, deduped by id — rendered
 // permanently (opacity-toggled, not mounted/unmounted) so a slot reused
@@ -33,23 +43,59 @@ interface CinematicStageProps {
  */
 export function CinematicStage({ onComplete }: CinematicStageProps) {
   const uniqueSlots = useMemo(getUniqueSlots, []);
+  const isPortrait = useIsPortraitViewport();
   const { shouldAutoSkip, isSkipControlVisible, isSkipped, skip } = useCinematicSkip();
+  const [isDissolving, setIsDissolving] = useState(false);
   const elapsed = useCinematicClock({ paused: isSkipped });
   const currentScene = getSceneAtTime(elapsed);
   const sceneProgress = getSceneProgress(currentScene, elapsed);
   useCinematicAudio(currentScene.key);
-  const isFinished = shouldAutoSkip || isSkipped || elapsed >= SCENES[SCENES.length - 1].end;
+
+  const naturalEnd = elapsed >= SCENES[SCENES.length - 1].end;
+  // A manual skip or reaching the natural end dissolves the stage out over
+  // OUTRO_FADE_MS before unmounting — the auto-skip paths (returning
+  // visitor, referral routing, reduced motion) unmount immediately since
+  // those visitors never see the stage in the first place.
+  const shouldDissolve = !shouldAutoSkip && (naturalEnd || isSkipped);
 
   useEffect(() => {
-    if (isFinished) onComplete();
-  }, [isFinished, onComplete]);
+    if (shouldAutoSkip) {
+      onComplete();
+      return;
+    }
+    if (shouldDissolve) {
+      setIsDissolving(true);
+      const timer = setTimeout(onComplete, OUTRO_FADE_MS);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldAutoSkip, shouldDissolve]);
 
-  if (isFinished) return null;
+  useEffect(() => {
+    if (shouldAutoSkip) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [shouldAutoSkip]);
+
+  if (shouldAutoSkip) return null;
 
   const activeSlotIds = new Set(currentScene.media.map((slot) => slot.id));
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: '#050709', overflow: 'hidden' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 100,
+        background: '#050709',
+        overflow: 'hidden',
+        opacity: isDissolving ? 0 : 1,
+        transition: `opacity ${OUTRO_FADE_MS}ms ease`,
+      }}
+    >
       {uniqueSlots.map((slot, index) => (
         <MediaLayer
           key={slot.id}
@@ -57,10 +103,11 @@ export function CinematicStage({ onComplete }: CinematicStageProps) {
           opacity={activeSlotIds.has(slot.id) ? 1 : 0}
           elapsed={elapsed}
           priority={index === 0}
+          isPortrait={isPortrait}
         />
       ))}
 
-      <EffectsOverlay scene={currentScene} progress={sceneProgress} />
+      <EffectsOverlay scene={currentScene} progress={sceneProgress} elapsed={elapsed} />
 
       {currentScene.key === 'black' && (
         <div
@@ -89,8 +136,8 @@ export function CinematicStage({ onComplete }: CinematicStageProps) {
           fontSize: 12,
           padding: '8px 16px',
           cursor: 'pointer',
-          opacity: isSkipControlVisible ? 1 : 0,
-          pointerEvents: isSkipControlVisible ? 'auto' : 'none',
+          opacity: isSkipControlVisible && !isDissolving ? 1 : 0,
+          pointerEvents: isSkipControlVisible && !isDissolving ? 'auto' : 'none',
           transition: 'opacity 0.8s ease',
         }}
       >
