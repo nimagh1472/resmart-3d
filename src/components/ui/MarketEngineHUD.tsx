@@ -87,7 +87,7 @@ export function MarketEngineHUD() {
           <div>
             <div className="flex items-baseline justify-between gap-2">
               <span className="shrink-0 text-[10px] uppercase tracking-widest text-neutral-400">
-                {activeRole === 'AGENT' ? 'Driver earnings' : 'Wallet'}
+                {activeRole === 'AGENT' ? 'Driver earnings (Demo)' : 'Demo Wallet'}
               </span>
               <span className="min-w-0 truncate text-lg font-semibold text-white">{currencyFormatter.format(balance)}</span>
             </div>

@@ -38,7 +38,7 @@ export function Leaderboard() {
         <button
           onClick={closeLeaderboard}
           aria-label="Close leaderboard"
-          className="absolute right-4 top-4 text-neutral-400 transition hover:text-white"
+          className="absolute right-2 top-2 flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-400 transition hover:text-white"
         >
           <X size={18} />
         </button>

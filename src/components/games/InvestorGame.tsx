@@ -141,7 +141,7 @@ export function InvestorGame() {
                     value={inputs[key]}
                     disabled={isRunning}
                     onChange={(event) => setInputs((current) => ({ ...current, [key]: Number(event.target.value) }))}
-                    className="w-full accent-cyan-400 disabled:opacity-50"
+                    className="min-h-[44px] w-full accent-cyan-400 disabled:opacity-50"
                   />
                 </div>
               );

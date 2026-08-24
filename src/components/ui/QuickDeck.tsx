@@ -34,7 +34,7 @@ export function QuickDeck() {
           <button
             onClick={() => setQuickDeckOpen(false)}
             aria-label="Close quick pitch deck"
-            className="text-neutral-500 transition hover:text-neutral-900"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-500 transition hover:text-neutral-900"
           >
             <X size={16} />
           </button>

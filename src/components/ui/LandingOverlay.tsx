@@ -1,7 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowRight, Building2, Car, Clapperboard, Gem, MapPin, Search, Sparkles, Timer, Truck, UserRound } from 'lucide-react';
+import {
+  ArrowRight,
+  Building2,
+  Car,
+  Clapperboard,
+  FileText,
+  Gem,
+  MapPin,
+  Search,
+  Sparkles,
+  Timer,
+  Truck,
+  UserRound,
+} from 'lucide-react';
 import { useRoleStore } from '@/hooks/useRoleStore';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { useSound } from '@/hooks/useSound';
@@ -51,7 +64,11 @@ const HOW_IT_WORKS: Array<{ icon: typeof Search; label: string; description: str
 const CAMPAIGN_ROLES: Array<{ role: ProfileRole; icon: typeof Car; description: string }> = [
   { role: 'driver', icon: Car, description: 'Complete driver runs and rank in the Top 50 for 3 months of 0% commission.' },
   { role: 'customer', icon: UserRound, description: 'Shop AI-matched deals and rank in the Top 50 for a 500 AED voucher.' },
-  { role: 'investor', icon: Clapperboard, description: 'Model the fleet ROI and rank in the Top 50 for early stock access.' },
+  {
+    role: 'investor',
+    icon: Clapperboard,
+    description: 'Model the fleet ROI and rank in the Top 50 for Priority Seed Allocation Rights.',
+  },
 ];
 
 /**
@@ -69,6 +86,7 @@ export function LandingOverlay() {
   const hasEnteredExperience = useRoleStore((state) => state.hasEnteredExperience);
   const forceShowLanding = useRoleStore((state) => state.forceShowLanding);
   const enterExperience = useRoleStore((state) => state.enterExperience);
+  const setQuickDeckOpen = useRoleStore((state) => state.setQuickDeckOpen);
   const persistedEmail = useUserProfileStore((state) => state.email);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
 
@@ -92,6 +110,11 @@ export function LandingOverlay() {
     enterExperience();
   };
 
+  const handleSkipToDataRoom = () => {
+    unlock();
+    setQuickDeckOpen(true);
+  };
+
   return (
     <div className="pointer-events-auto absolute inset-0 z-30 overflow-y-auto bg-asphalt">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(34,211,238,0.12),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(217,119,6,0.1),transparent_45%),radial-gradient(circle_at_50%_100%,rgba(168,85,247,0.12),transparent_55%)]" />
@@ -104,9 +127,23 @@ export function LandingOverlay() {
             <Gem size={16} />
           </div>
 
+          <div className="mx-auto mt-3 flex w-fit items-center gap-1.5 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium text-neutral-300">
+            <span>Guest</span>
+            <span className="text-white/20">|</span>
+            <span>Demo Wallet: AED 0 (Simulation)</span>
+          </div>
+
           <h1 className="mt-4 text-center text-2xl font-semibold leading-tight text-white sm:text-4xl">
             ReSmart AI — Dubai&apos;s AI Search Engine &amp; Smart Logistics Network
           </h1>
+
+          <div className="mx-auto mt-3 flex flex-wrap items-center justify-center gap-x-2 gap-y-1.5 text-[11px] font-semibold uppercase tracking-widest text-cyan-300">
+            <span className="rounded-full border border-cyan-400/25 bg-cyan-400/5 px-3 py-1">AI SEARCH</span>
+            <span className="text-neutral-500">·</span>
+            <span className="rounded-full border border-cyan-400/25 bg-cyan-400/5 px-3 py-1">MERCHANT ADS</span>
+            <span className="text-neutral-500">·</span>
+            <span className="rounded-full border border-cyan-400/25 bg-cyan-400/5 px-3 py-1">ROUTE LOGISTICS</span>
+          </div>
 
           <p className="mx-auto mt-4 max-w-xl text-center text-sm leading-relaxed text-neutral-300 sm:text-base">
             Connecting Customers with AI-matched local merchant deals, enabling Merchants to advertise directly on the
@@ -170,12 +207,24 @@ export function LandingOverlay() {
             </div>
           </div>
 
-          <button
-            onClick={handleEnter}
-            className="mx-auto mt-8 flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-400 px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-cyan-500/20 transition hover:opacity-90 sm:text-base"
-          >
-            Enter 3D Dubai Experience <ArrowRight size={16} />
-          </button>
+          <div className="mx-auto mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+            <button
+              onClick={handleEnter}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 via-purple-500 to-amber-400 px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-cyan-500/20 transition hover:opacity-90 sm:text-base"
+            >
+              Enter 3D Dubai Experience <ArrowRight size={16} />
+            </button>
+            <button
+              onClick={handleSkipToDataRoom}
+              className="flex min-h-[44px] items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-6 py-3 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
+            >
+              <FileText size={14} /> Skip to Investor Data Room
+            </button>
+          </div>
+
+          <p className="mx-auto mt-6 max-w-md text-center text-[11px] leading-relaxed text-neutral-500">
+            ReSmart AI Launchpad Demo. Not an offer of securities.
+          </p>
         </div>
       </div>
     </div>

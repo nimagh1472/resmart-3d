@@ -7,7 +7,7 @@ export const LEADERBOARD_SIZE = 50;
 export const ROLE_BADGES: Record<ProfileRole, string> = {
   driver: '3 Months 0% Commission',
   customer: '500 AED Voucher',
-  investor: 'Early Stock Access',
+  investor: 'Priority Seed Allocation Rights',
 };
 
 export const ROLE_LABELS: Record<ProfileRole, string> = {

@@ -18,6 +18,8 @@ export function GameNavBar() {
   const backToHub = useRoleStore((state) => state.backToHub);
   const goHome = useRoleStore((state) => state.goHome);
   const openAccountPanel = useUserProfileStore((state) => state.openAccountPanel);
+  const profileRole = useUserProfileStore((state) => state.role);
+  const profileRank = useUserProfileStore((state) => state.rank);
 
   return (
     <div className="pointer-events-auto absolute left-4 top-4 z-30 flex items-center gap-1 rounded-full border border-neonCyan/25 bg-darkGlass/75 p-1 shadow-2xl shadow-cyan-500/10 backdrop-blur-[16px]">
@@ -28,6 +30,14 @@ export function GameNavBar() {
       >
         <Sparkles size={13} className="text-purple-400" /> <span className="hidden sm:inline">ReSmart AI</span>
       </button>
+      {profileRole && (
+        <>
+          <span className="text-white/10">|</span>
+          <span className="hidden items-center gap-1 px-1.5 text-xs text-cyan-300 sm:inline-flex">
+            Rank {profileRank ? `#${profileRank}` : '—'}
+          </span>
+        </>
+      )}
       <span className="text-white/10">|</span>
       <button
         onClick={backToHub}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Award, Check, Copy, Gem, Share2, X } from 'lucide-react';
+import { Award, Check, Copy, Gem, MessageCircle, Share2, X } from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getAllRoleSummaries, ROLE_LABELS } from '@/lib/leaderboard';
 
@@ -63,13 +63,23 @@ export function ShareRankCard() {
     handleCopy();
   };
 
+  const whatsappShareUrl = referralLink
+    ? `https://wa.me/?text=${encodeURIComponent(
+        `I am ranked ${rankLabel} in ReSmart AI Dubai Launch! Join me: ${referralLink}`,
+      )}`
+    : '';
+
+  const handleWhatsAppShare = () => {
+    applyShareBoost();
+  };
+
   return (
     <div className="pointer-events-auto absolute inset-0 z-[70] flex items-center justify-center bg-asphalt/80 backdrop-blur-sm">
       <div className="animate-modal-in relative w-full max-w-sm rounded-3xl border border-white/15 bg-asphalt p-5 shadow-2xl shadow-cyan-500/20">
         <button
           onClick={closeShareCard}
           aria-label="Close share card"
-          className="absolute right-4 top-4 text-neutral-400 transition hover:text-white"
+          className="absolute right-2 top-2 flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-400 transition hover:text-white"
         >
           <X size={18} />
         </button>
@@ -113,10 +123,20 @@ export function ShareRankCard() {
           </div>
           <button
             onClick={handleNativeShare}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
           >
             <Share2 size={14} /> Share Rank
           </button>
+          <a
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleWhatsAppShare}
+            aria-disabled={!whatsappShareUrl}
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+          >
+            <MessageCircle size={14} /> Share on WhatsApp
+          </a>
         </div>
       </div>
     </div>

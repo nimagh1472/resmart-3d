@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import clsx from 'clsx';
-import { Award, Car, Check, Copy, IdCard, Mail, Share2, TrendingUp, UserRound, X } from 'lucide-react';
+import { Award, Car, Check, Copy, IdCard, Mail, MessageCircle, Share2, TrendingUp, UserRound, X } from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import { getAllRoleSummaries, ROLE_BADGES, ROLE_LABELS } from '@/lib/leaderboard';
 import type { ProfileRole } from '@/types';
@@ -30,6 +30,8 @@ export function AccountPanel() {
   const currentRole = useUserProfileStore((state) => state.role);
   const referralCode = useUserProfileStore((state) => state.referralCode);
   const openShareCard = useUserProfileStore((state) => state.openShareCard);
+  const profileRank = useUserProfileStore((state) => state.rank);
+  const applyShareBoost = useUserProfileStore((state) => state.applyShareBoost);
 
   const [copied, setCopied] = useState(false);
 
@@ -72,7 +74,7 @@ export function AccountPanel() {
         <button
           onClick={closeAccountPanel}
           aria-label="Close account panel"
-          className="absolute right-4 top-4 text-neutral-400 transition hover:text-white"
+          className="absolute right-2 top-2 flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-400 transition hover:text-white"
         >
           <X size={18} />
         </button>
@@ -140,12 +142,28 @@ export function AccountPanel() {
             />
             <button
               onClick={handleShare}
-              className="flex shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
+              className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-purple-500 px-3 py-2 text-xs font-semibold text-white transition hover:opacity-90"
             >
               {copied ? <Check size={13} /> : <Copy size={13} />}
               {copied ? 'Copied' : 'Share'}
             </button>
           </div>
+          <a
+            href={
+              referralLink
+                ? `https://wa.me/?text=${encodeURIComponent(
+                    `I am ranked ${profileRank ? `#${profileRank}` : 'in'} ReSmart AI Dubai Launch! Join me: ${referralLink}`,
+                  )}`
+                : undefined
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={applyShareBoost}
+            aria-disabled={!referralLink}
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
+          >
+            <MessageCircle size={13} /> Share on WhatsApp
+          </a>
         </div>
       </div>
     </div>

@@ -59,6 +59,7 @@ export function Overlay() {
   const tickOrderCountdown = useRoleStore((state) => state.tickOrderCountdown);
   const openLeaderboard = useUserProfileStore((state) => state.openLeaderboard);
   const openAccountPanel = useUserProfileStore((state) => state.openAccountPanel);
+  const profileRank = useUserProfileStore((state) => state.rank);
   const { isAudioEnabled, unlock, mute } = useSound();
 
   const isSessionActive = activeRole !== null || presentationMode === 'CINEMATIC';
@@ -109,7 +110,7 @@ export function Overlay() {
           <span className="text-white/10">|</span>
           <span className="text-emerald-300">
             {isAgent ? currencyFormatter.format(driverEarnings) : currencyFormatter.format(customerWallet)}
-            <span className="text-neutral-400">{isAgent ? ' earned' : ' wallet'}</span>
+            <span className="text-neutral-400">{isAgent ? ' earned (sim)' : ' demo wallet'}</span>
           </span>
           {(isCustomer || isAgent) && activeOrderCountdownSeconds !== null && (
             <>
@@ -117,6 +118,8 @@ export function Overlay() {
               <span className="font-semibold text-green-400">ETA {formatCountdown(activeOrderCountdownSeconds)}</span>
             </>
           )}
+          <span className="text-white/10">|</span>
+          <span className="text-cyan-300">Rank {profileRank ? `#${profileRank}` : '—'}</span>
         </div>
 
         <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-neonCyan/25 bg-darkGlass/75 backdrop-blur-[16px] p-1 shadow-2xl shadow-cyan-500/10">
