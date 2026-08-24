@@ -1,12 +1,13 @@
 'use client';
 
-import { memo, useEffect, useRef } from 'react';
+import { memo, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
 import { FacingText } from '@/components/3d/FacingText';
 import { GLASS_TOWER_MATERIAL_PROPS, BACKGROUND_BUILDING_MATERIAL_PROPS } from '@/components/3d/Environment';
+import type { DistrictId } from '@/types';
 
 // Ambient decorative skyline only — no driving/routes/stations. Every
 // position below is a local constant (pitchData.ts no longer exports
@@ -302,22 +303,158 @@ function AINodeParticles() {
   );
 }
 
+/**
+ * Ground-level glow ring per Dubai launch district, arranged around the
+ * central tower at the 4 compass points. Driven by the 2D DistrictSelector's
+ * hover/select state (threaded down via AmbientScene -> World, since the
+ * canvas itself is pointer-events:none and can never receive hover/click
+ * directly) — selecting a district brightens its ring; hovering previews a
+ * dimmer version without committing the selection.
+ */
+const DISTRICT_ZONE_POSITIONS: Record<DistrictId, [number, number, number]> = {
+  downtown: [0, 0.05, 40],
+  'business-bay': [40, 0.05, 0],
+  szr: [0, 0.05, -40],
+  difc: [-40, 0.05, 0],
+};
+
+function DistrictGlowZone({
+  position,
+  isActive,
+  isHovered,
+}: {
+  position: [number, number, number];
+  isActive: boolean;
+  isHovered: boolean;
+}) {
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null);
+
+  useFrame(() => {
+    const material = materialRef.current;
+    if (!material) return;
+    const targetIntensity = isActive ? 4.5 : isHovered ? 2.2 : 0.4;
+    material.emissiveIntensity = THREE.MathUtils.lerp(material.emissiveIntensity, targetIntensity, 0.08);
+  });
+
+  return (
+    <mesh position={position} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[4, 7, 32]} />
+      <meshStandardMaterial
+        ref={materialRef}
+        color="#00E5FF"
+        emissive="#00E5FF"
+        emissiveIntensity={0.4}
+        toneMapped={false}
+        transparent
+        opacity={0.65}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
+  );
+}
+
+function DistrictGlowZones({
+  selectedDistrict,
+  hoveredDistrict,
+}: {
+  selectedDistrict?: DistrictId;
+  hoveredDistrict?: DistrictId | null;
+}) {
+  return (
+    <>
+      {(Object.keys(DISTRICT_ZONE_POSITIONS) as DistrictId[]).map((id) => (
+        <DistrictGlowZone
+          key={id}
+          position={DISTRICT_ZONE_POSITIONS[id]}
+          isActive={selectedDistrict === id}
+          isHovered={hoveredDistrict === id}
+        />
+      ))}
+    </>
+  );
+}
+
+/**
+ * The "Network Pulse" — a glowing node that loops SEARCH -> MATCH ->
+ * TRANSACT -> FULFILL every 6 seconds along a closed Catmull-Rom curve
+ * through 4 waypoints around the central tower, standing in for a
+ * transaction moving through ReSmart AI's matching/fulfillment pipeline.
+ */
+const PULSE_WAYPOINTS: Array<{ label: string; position: [number, number, number] }> = [
+  { label: 'SEARCH', position: [0, 11, 30] },
+  { label: 'MATCH', position: [30, 11, 0] },
+  { label: 'TRANSACT', position: [0, 11, -30] },
+  { label: 'FULFILL', position: [-30, 11, 0] },
+];
+const PULSE_PERIOD_SECONDS = 6;
+
+function NetworkPulse() {
+  const pulseMeshRef = useRef<THREE.Mesh>(null);
+  const pulseLightRef = useRef<THREE.PointLight>(null);
+
+  const pulseCurve = useMemo(
+    () =>
+      new THREE.CatmullRomCurve3(
+        PULSE_WAYPOINTS.map((waypoint) => new THREE.Vector3(...waypoint.position)),
+        true,
+        'catmullrom',
+        0.5,
+      ),
+    [],
+  );
+
+  useFrame((state) => {
+    const progress = (state.clock.elapsedTime % PULSE_PERIOD_SECONDS) / PULSE_PERIOD_SECONDS;
+    const point = pulseCurve.getPointAt(progress);
+    pulseMeshRef.current?.position.copy(point);
+    pulseLightRef.current?.position.copy(point);
+  });
+
+  return (
+    <group>
+      <mesh ref={pulseMeshRef}>
+        <sphereGeometry args={[0.6, 12, 12]} />
+        <meshStandardMaterial color="#00E5FF" emissive="#00E5FF" emissiveIntensity={5} toneMapped={false} />
+      </mesh>
+      <pointLight ref={pulseLightRef} color="#00E5FF" intensity={20} distance={34} decay={2} />
+      {PULSE_WAYPOINTS.map((waypoint) => (
+        <FacingText
+          key={waypoint.label}
+          position={[waypoint.position[0], waypoint.position[1] + 2.2, waypoint.position[2]]}
+          fontSize={1.1}
+          color="#00E5FF"
+          anchorX="center"
+          anchorY="middle"
+        >
+          {waypoint.label}
+        </FacingText>
+      ))}
+    </group>
+  );
+}
+
 interface WorldProps {
   isMobile: boolean;
+  selectedDistrict?: DistrictId;
+  hoveredDistrict?: DistrictId | null;
 }
 
 /**
  * Minimal glowing Dubai skyline backdrop: a Burj Khalifa-style central
- * tower silhouette ringed by a light decorative skyline, plus ambient
- * "AI network" particle motes. Purely decorative — no driving, no physics,
- * no per-role logic.
+ * tower silhouette ringed by a light decorative skyline, ambient "AI
+ * network" particle motes, per-district glow zones tied to the
+ * DistrictSelector UI, and the looping NetworkPulse. Functional, not purely
+ * decorative — the glow zones and pulse visualize real page state/product
+ * mechanics rather than just filling space. No driving, no physics.
  */
-export const World = memo(function World({ isMobile }: WorldProps) {
+export const World = memo(function World({ isMobile, selectedDistrict, hoveredDistrict }: WorldProps) {
   return (
     <>
       <CentralTower />
       {!isMobile && <AINodeParticles />}
       <SkylineBuildings />
+      <DistrictGlowZones selectedDistrict={selectedDistrict} hoveredDistrict={hoveredDistrict} />
+      <NetworkPulse />
     </>
   );
 });

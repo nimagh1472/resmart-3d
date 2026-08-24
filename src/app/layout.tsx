@@ -14,9 +14,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ReSmart AI — Dubai's AI Commerce & Autonomous Logistics Network",
+  title: "ReSmart AI — Dubai's AI Commerce & Logistics Network",
   description:
-    "Join the ReSmart AI pre-launch waitlist as a Customer, Merchant, or Driver, or request access to the Investor Data Room.",
+    "Join the ReSmart AI Founding Network as a Shopper, Merchant, or Driver, or request Investor Access to the confidential seed data room.",
 };
 
 export default function RootLayout({

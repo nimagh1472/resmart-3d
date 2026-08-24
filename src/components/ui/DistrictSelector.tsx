@@ -6,8 +6,7 @@ import { Building2, Gauge, MapPin, TrendingUp } from 'lucide-react';
 import { DISTRICTS, INVESTOR_SEED_CAPACITY, URGENCY_SPOTS } from '@/lib/pitchData';
 import type { DistrictId, LeadRole } from '@/types';
 
-type WaitlistRole = Exclude<LeadRole, 'investor'>;
-const WAITLIST_ROLES: WaitlistRole[] = ['customer', 'merchant', 'driver'];
+const SPOT_POOL_ROLES: Array<'merchant' | 'driver'> = ['merchant', 'driver'];
 
 function formatGmv(value: number): string {
   return `AED ${(value / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M`;
@@ -16,15 +15,22 @@ function formatGmv(value: number): string {
 interface DistrictSelectorProps {
   selectedDistrict: DistrictId;
   onSelectDistrict: (id: DistrictId) => void;
+  onHoverDistrict?: (id: DistrictId | null) => void;
 }
 
 /**
- * Neon district bar: switching districts updates the local metrics card;
- * below it, live "spots remaining" urgency counters per role (base pool
- * from pitchData.URGENCY_SPOTS, topped up by the best-effort in-memory
- * counter in app/api/waitlist/route.ts).
+ * Neon district bar: switching districts updates the local metrics card and
+ * previews the 3D backdrop's glow zone for that district (see
+ * components/3d/World.tsx's DistrictGlowZones, driven by the
+ * selectedDistrict/hoveredDistrict state app/page.tsx threads down to
+ * AmbientScene — the canvas itself is pointer-events:none, so this 2D bar is
+ * the only source of hover/select events). Below it, live "spots remaining"
+ * urgency counters for Merchant/Driver (base pool from
+ * pitchData.URGENCY_SPOTS, topped up by the best-effort in-memory counter in
+ * app/api/waitlist/route.ts) — Shopper uses the separate large-scale rank
+ * model surfaced in ShareSuccessModal instead of a spot pool.
  */
-export function DistrictSelector({ selectedDistrict, onSelectDistrict }: DistrictSelectorProps) {
+export function DistrictSelector({ selectedDistrict, onSelectDistrict, onHoverDistrict }: DistrictSelectorProps) {
   const [liveCounts, setLiveCounts] = useState<Partial<Record<LeadRole, number>>>({});
 
   useEffect(() => {
@@ -56,6 +62,10 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict }: Distric
             <button
               key={district.id}
               onClick={() => onSelectDistrict(district.id)}
+              onMouseEnter={() => onHoverDistrict?.(district.id)}
+              onMouseLeave={() => onHoverDistrict?.(null)}
+              onFocus={() => onHoverDistrict?.(district.id)}
+              onBlur={() => onHoverDistrict?.(null)}
               className={clsx(
                 'rounded-full border px-3 py-2 text-xs font-medium transition',
                 selectedDistrict === district.id
@@ -87,7 +97,7 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict }: Distric
         </div>
 
         <div className="mx-auto mt-6 grid max-w-xl gap-2">
-          {WAITLIST_ROLES.map((role) => {
+          {SPOT_POOL_ROLES.map((role) => {
             const pool = URGENCY_SPOTS[role];
             const claimed = pool.baseClaimed + (liveCounts[role] ?? 0);
             const remaining = Math.max(0, pool.totalSpots - claimed);

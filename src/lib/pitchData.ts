@@ -1,11 +1,11 @@
 import type {
   DistrictId,
   DistrictMetrics,
-  InvestorRoiInputs,
-  InvestorRoiResult,
   LeadRole,
   PitchMetric,
   RevenueStream,
+  SeedScenarioInputs,
+  SeedScenarioResult,
   VoucherReward,
   WorldBounds,
 } from '@/types';
@@ -68,8 +68,17 @@ export const PITCH_METRICS: Record<string, PitchMetric> = {
 };
 
 /**
+ * Consolidated methodology footnote for the Investor Access modal's
+ * TAM/SAM/ARR headline metrics — the per-metric `assumption`/`source` fields
+ * above already carry the detail; this is the single "Assumptions & Sources"
+ * disclosure toggle's combined text.
+ */
+export const METHODOLOGY_NOTE =
+  'TAM/SAM figures are derived from local e-commerce and search-ad spend benchmarks scoped to the UAE and to the Downtown Dubai/Business Bay launch geography. Year-1 ARR is modeled bottom-up from the 5 revenue streams below at the merchant/driver adoption assumptions in the Seed Scenario Model. All figures are illustrative projections for this pre-launch demo, not audited financials or guarantees of performance.';
+
+/**
  * The 5 concurrent revenue streams behind FINANCIAL_METRICS.yearOneARR —
- * surfaced in the Investor Data Room so investors see the monetization
+ * surfaced in the Investor Access modal so investors see the monetization
  * structure, not just the resulting ARR total.
  */
 export const REVENUE_STREAMS: RevenueStream[] = [
@@ -90,7 +99,7 @@ export const REVENUE_STREAMS: RevenueStream[] = [
   },
   {
     key: 'CUSTOMER_PREMIUM',
-    label: 'Customer AI Premium Subscriptions',
+    label: 'Shopper AI Premium Subscriptions',
     description: 'VIP deals & priority delivery matching.',
   },
   {
@@ -103,7 +112,8 @@ export const REVENUE_STREAMS: RevenueStream[] = [
 /**
  * Dubai launch districts surfaced in the neon district selector — each has
  * its own illustrative density/efficiency/GMV figures so switching districts
- * visibly changes the page's stats rather than just relabeling a static card.
+ * visibly changes the page's stats (and the 3D backdrop's glow zones)
+ * rather than just relabeling a static card.
  */
 export const DISTRICTS: DistrictMetrics[] = [
   { id: 'downtown', label: 'Downtown Dubai', merchantDensity: 420, aiRouteEfficiencyPct: 94, regionalGmvAed: 62_000_000 },
@@ -115,14 +125,14 @@ export const DISTRICTS: DistrictMetrics[] = [
 export const DEFAULT_DISTRICT_ID: DistrictId = 'downtown';
 
 /**
- * Waitlist urgency pools for Customer/Merchant/Driver — `baseClaimed` seeds a
+ * Waitlist urgency pools for Merchant/Driver — `baseClaimed` seeds a
  * realistic "already filling up" starting count (so the counter never opens
  * at a suspicious 0/50); live submissions on top of this come from
- * /api/waitlist. Investor uses a separate flat capacity claim (see
- * INVESTOR_SEED_CAPACITY) rather than a spot pool.
+ * /api/waitlist. Shopper uses the larger-scale SHOPPER_RANK_CONFIG rank
+ * model instead (see below) rather than a small spot pool. Investor uses a
+ * separate flat capacity claim (see INVESTOR_SEED_CAPACITY).
  */
-export const URGENCY_SPOTS: Record<Exclude<LeadRole, 'investor'>, { label: string; totalSpots: number; baseClaimed: number }> = {
-  customer: { label: 'Early Voucher Spots', totalSpots: 50, baseClaimed: 38 },
+export const URGENCY_SPOTS: Record<'merchant' | 'driver', { label: string; totalSpots: number; baseClaimed: number }> = {
   merchant: { label: 'Founding Merchant Slots', totalSpots: 50, baseClaimed: 28 },
   driver: { label: 'Zero-Commission Slots', totalSpots: 50, baseClaimed: 42 },
 };
@@ -134,11 +144,11 @@ export const INVESTOR_SEED_CAPACITY = {
 };
 
 /**
- * Real-world voucher conversion for the Customer role's early-access reward —
+ * Real-world voucher conversion for the Shopper role's early-access reward —
  * every qualifying signup is eligible for a AED 500 launch voucher.
  */
 export const VOUCHER_CONVERSION = {
-  customerVoucherValueAed: 500,
+  shopperVoucherValueAed: 500,
 };
 
 const VOUCHER_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -151,25 +161,42 @@ function generateVoucherCode(): string {
   return `RESMART-${code}`;
 }
 
-/** Generates a one-time launch voucher reward for a qualifying Customer signup. */
+/** Generates a one-time launch voucher reward for a qualifying Shopper signup. */
 export function calculateVoucherReward(): VoucherReward {
-  return { voucherCount: 1, voucherValue: VOUCHER_CONVERSION.customerVoucherValueAed, code: generateVoucherCode() };
+  return { voucherCount: 1, voucherValue: VOUCHER_CONVERSION.shopperVoucherValueAed, code: generateVoucherCode() };
 }
 
 /**
- * Interactive ROI calculator behind the Investor Data Room's financial
- * sliders — lifted from the old driving-game's InvestorGame minigame model,
- * stripped of its gameplay scoring/telemetry. Simple, transparent profit
- * model: fleet size caps how many of the investor's target orders can
- * actually be fulfilled; the efficiency slider scales how much of the base
- * per-order margin is retained (better routing/fuel use = less margin lost);
- * staff/ops cost is a flat daily cost against gross profit.
+ * Shopper growth-loop rank model: a much larger illustrative waitlist than
+ * Merchant/Driver's 50-slot pools, with a "Top 50" tier every shopper is
+ * chasing. Sharing nudges the visitor's rank down (toward #1); inviting a
+ * friend who actually signs up nudges it down further. Tuned so ~2 invites
+ * closes most of a typical seed-range gap to the Top 50 tier.
  */
-const ORDERS_PER_DRIVER_PER_DAY = 25;
-// Reuses the same AED 22.5 net-margin-per-order figure the pitch deck cites
-// elsewhere, so the calculator ties back to the rest of the financial
-// narrative instead of inventing a new number.
-const BASE_MARGIN_PER_ORDER_AED = FINANCIAL_METRICS.netMarginPerOrder.value;
+export const SHOPPER_RANK_CONFIG = {
+  totalWaitlistSize: 1_200,
+  seedRangeMin: 150,
+  seedRangeMax: 320,
+  topTierRank: 50,
+  topTierLabel: 'Top 50',
+  pointsPerShare: 25,
+  maxShareBoosts: 3,
+  pointsPerInvite: 68,
+};
+
+/**
+ * Interactive Seed Scenario Model behind the Investor Access modal's
+ * post-qualification unlock. Transparent, two-input model: the merchant
+ * scale slider drives projected ARR (via the ARR-per-merchant rate implied
+ * by FINANCIAL_METRICS.yearOneARR and today's total district merchant
+ * density, so it ties back to the published pitch figures instead of
+ * inventing a new number); the seed allocation slider drives the estimated
+ * runway (scaled off the existing "18-month runway" assumption behind the
+ * AED 3.5M seed ask) and an ARR-coverage multiple.
+ */
+const TOTAL_CURRENT_MERCHANT_DENSITY = DISTRICTS.reduce((sum, district) => sum + district.merchantDensity, 0);
+const ARR_PER_MERCHANT_AED = FINANCIAL_METRICS.yearOneARR.value / TOTAL_CURRENT_MERCHANT_DENSITY;
+const BASE_RUNWAY_MONTHS = 18;
 
 interface SliderRange {
   min: number;
@@ -178,32 +205,22 @@ interface SliderRange {
   default: number;
 }
 
-export const INVESTOR_ROI_INPUT_RANGES: Record<keyof InvestorRoiInputs, SliderRange> = {
-  dailyTargetOrders: { min: 1_000, max: 100_000, step: 500, default: 20_000 },
-  staffOpsCostAed: { min: 5_000, max: 200_000, step: 1_000, default: 40_000 },
-  fleetSize: { min: 1, max: 500, step: 1, default: 50 },
-  efficiencyPct: { min: 0, max: 100, step: 1, default: 70 },
+export const SEED_SCENARIO_INPUT_RANGES: Record<keyof SeedScenarioInputs, SliderRange> = {
+  seedAllocationAed: { min: 500_000, max: 3_500_000, step: 50_000, default: 1_500_000 },
+  projectedMerchantScale: { min: 50, max: 2_000, step: 50, default: 400 },
 };
 
-export const DEFAULT_INVESTOR_ROI_INPUTS: InvestorRoiInputs = {
-  dailyTargetOrders: INVESTOR_ROI_INPUT_RANGES.dailyTargetOrders.default,
-  staffOpsCostAed: INVESTOR_ROI_INPUT_RANGES.staffOpsCostAed.default,
-  fleetSize: INVESTOR_ROI_INPUT_RANGES.fleetSize.default,
-  efficiencyPct: INVESTOR_ROI_INPUT_RANGES.efficiencyPct.default,
+export const DEFAULT_SEED_SCENARIO_INPUTS: SeedScenarioInputs = {
+  seedAllocationAed: SEED_SCENARIO_INPUT_RANGES.seedAllocationAed.default,
+  projectedMerchantScale: SEED_SCENARIO_INPUT_RANGES.projectedMerchantScale.default,
 };
 
-export function calculateInvestorRoi(inputs: InvestorRoiInputs): InvestorRoiResult {
-  const maxFulfillableOrders = inputs.fleetSize * ORDERS_PER_DRIVER_PER_DAY;
-  const ordersFulfilled = Math.min(inputs.dailyTargetOrders, maxFulfillableOrders);
+export function calculateSeedScenario(inputs: SeedScenarioInputs): SeedScenarioResult {
+  const projectedArrAed = inputs.projectedMerchantScale * ARR_PER_MERCHANT_AED;
+  const estimatedRunwayMonths = BASE_RUNWAY_MONTHS * (inputs.seedAllocationAed / FINANCIAL_METRICS.seedAsk.value);
+  const arrCoverageMultiple = inputs.seedAllocationAed > 0 ? projectedArrAed / inputs.seedAllocationAed : 0;
 
-  const marginMultiplier = 0.5 + (inputs.efficiencyPct / 100) * 0.5;
-  const effectiveMarginPerOrder = BASE_MARGIN_PER_ORDER_AED * marginMultiplier;
-
-  const grossProfitAed = ordersFulfilled * effectiveMarginPerOrder;
-  const netProfitAed = grossProfitAed - inputs.staffOpsCostAed;
-
-  const netMarginPct = grossProfitAed > 0 ? (netProfitAed / grossProfitAed) * 100 : -100;
-  const roiPct = inputs.staffOpsCostAed > 0 ? (netProfitAed / inputs.staffOpsCostAed) * 100 : 0;
-
-  return { ordersFulfilled, netProfitAed, netMarginPct, roiPct };
+  return { projectedArrAed, estimatedRunwayMonths, arrCoverageMultiple };
 }
+
+export const WAITLIST_ROLES: Array<Extract<LeadRole, 'shopper' | 'merchant' | 'driver'>> = ['shopper', 'merchant', 'driver'];

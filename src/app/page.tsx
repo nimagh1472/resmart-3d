@@ -5,12 +5,15 @@ import dynamic from 'next/dynamic';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { StickyHeader } from '@/components/ui/StickyHeader';
 import { Hero } from '@/components/ui/Hero';
+import { NetworkFlowStrip } from '@/components/ui/NetworkFlowStrip';
 import { LeadCaptureCard } from '@/components/ui/LeadCaptureCard';
 import { DistrictSelector } from '@/components/ui/DistrictSelector';
-import { InvestorDataRoomModal } from '@/components/ui/InvestorDataRoomModal';
+import { HowItWorksCards } from '@/components/ui/HowItWorksCards';
+import { InvestorAccessModal } from '@/components/ui/InvestorAccessModal';
 import { Footer } from '@/components/ui/Footer';
 import { DEFAULT_DISTRICT_ID } from '@/lib/pitchData';
-import type { DistrictId } from '@/types';
+import { useIntentPersona } from '@/hooks/useIntentPersona';
+import type { DistrictId, LeadRole } from '@/types';
 
 const AmbientScene = dynamic(() => import('@/components/3d/AmbientScene').then((mod) => mod.AmbientScene), {
   ssr: false,
@@ -18,33 +21,46 @@ const AmbientScene = dynamic(() => import('@/components/3d/AmbientScene').then((
 });
 
 /**
- * Single continuous landing page — no more "session"/role gating. The
- * ambient 3D skyline is a fixed, non-interactive backdrop behind the actual
- * content (header, hero, lead-capture card, district/urgency bar, footer),
- * with the Investor Data Room as the one modal, reachable from three places.
+ * Single continuous landing page. The ambient 3D skyline is a fixed,
+ * non-interactive backdrop behind the actual content (header, hero,
+ * network-pulse strip, lead-capture card, district selector, how-it-works
+ * cards, footer). A single shared `persona` state (seeded by
+ * useIntentPersona's ?ref=/?inv= dynamic intent routing) drives Hero's CTA +
+ * persona switcher and LeadCaptureCard's active tab together; Investor
+ * Access is a hard-gated modal reachable only from the header button or the
+ * Hero CTA/persona switcher when persona === 'investor'.
  */
 export default function Home() {
+  const initialPersona = useIntentPersona();
+  const [persona, setPersona] = useState<LeadRole>(initialPersona);
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictId>(DEFAULT_DISTRICT_ID);
-  const [isDataRoomOpen, setIsDataRoomOpen] = useState(false);
-  const openDataRoom = () => setIsDataRoomOpen(true);
+  const [hoveredDistrict, setHoveredDistrict] = useState<DistrictId | null>(null);
+  const [isInvestorAccessOpen, setIsInvestorAccessOpen] = useState(false);
+  const openInvestorAccess = () => setIsInvestorAccessOpen(true);
 
   return (
     <main className="relative z-10 min-h-screen w-full overflow-x-hidden bg-asphalt">
       <ErrorBoundary>
-        <div className="pointer-events-none fixed inset-0 z-0 h-screen w-screen">
-          <AmbientScene />
+        <div className="fixed inset-0 z-0 pointer-events-none">
+          <AmbientScene selectedDistrict={selectedDistrict} hoveredDistrict={hoveredDistrict} />
         </div>
       </ErrorBoundary>
 
       <div className="relative z-10 flex flex-col items-center">
-        <StickyHeader onOpenDataRoom={openDataRoom} />
-        <Hero onOpenDataRoom={openDataRoom} />
-        <LeadCaptureCard selectedDistrict={selectedDistrict} onOpenDataRoom={openDataRoom} />
-        <DistrictSelector selectedDistrict={selectedDistrict} onSelectDistrict={setSelectedDistrict} />
+        <StickyHeader onOpenInvestorAccess={openInvestorAccess} />
+        <Hero persona={persona} onSelectPersona={setPersona} onOpenInvestorAccess={openInvestorAccess} />
+        <NetworkFlowStrip />
+        <LeadCaptureCard persona={persona} onSelectPersona={setPersona} selectedDistrict={selectedDistrict} />
+        <DistrictSelector
+          selectedDistrict={selectedDistrict}
+          onSelectDistrict={setSelectedDistrict}
+          onHoverDistrict={setHoveredDistrict}
+        />
+        <HowItWorksCards />
         <Footer />
       </div>
 
-      <InvestorDataRoomModal isOpen={isDataRoomOpen} onClose={() => setIsDataRoomOpen(false)} />
+      <InvestorAccessModal isOpen={isInvestorAccessOpen} onClose={() => setIsInvestorAccessOpen(false)} />
     </main>
   );
 }

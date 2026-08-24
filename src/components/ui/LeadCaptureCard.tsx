@@ -1,24 +1,25 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import clsx from 'clsx';
 import confetti from 'canvas-confetti';
-import { Bike, Building2, Car, CheckCircle2, Clapperboard, Mail, Truck, UserRound, Zap } from 'lucide-react';
+import { Bike, Building2, Car, CheckCircle2, Mail, MessageCircle, Store, Truck, UserRound, Zap } from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
-import { DISTRICTS, URGENCY_SPOTS, VOUCHER_CONVERSION } from '@/lib/pitchData';
+import { DISTRICTS, VOUCHER_CONVERSION } from '@/lib/pitchData';
 import { ShareSuccessModal } from '@/components/ui/ShareSuccessModal';
 import type { DistrictId, LeadPayload, LeadRole, VehicleType } from '@/types';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_PATTERN = /^\+?[\d\s-]{7,}$/;
 const LEADS_STORAGE_KEY = 'resmart_leads';
 
-type WaitlistRole = Exclude<LeadRole, 'investor'>;
+/** The 3 form-driven funnels — Investor is handled entirely via the header button / Hero CTA, never a tab here. */
+type FormRole = Exclude<LeadRole, 'investor'>;
 
-const ROLE_TABS: Array<{ role: LeadRole; label: string; icon: typeof UserRound }> = [
-  { role: 'customer', label: 'Customer', icon: UserRound },
+const ROLE_TABS: Array<{ role: FormRole; label: string; icon: typeof UserRound }> = [
+  { role: 'shopper', label: 'Shopper', icon: UserRound },
   { role: 'merchant', label: 'Merchant', icon: Building2 },
   { role: 'driver', label: 'Driver', icon: Truck },
-  { role: 'investor', label: 'Investor', icon: Clapperboard },
 ];
 
 const VEHICLE_OPTIONS: Array<{ value: VehicleType; label: string; icon: typeof Bike }> = [
@@ -26,6 +27,11 @@ const VEHICLE_OPTIONS: Array<{ value: VehicleType; label: string; icon: typeof B
   { value: 'ev', label: 'EV', icon: Zap },
   { value: 'sedan', label: 'Sedan', icon: Car },
 ];
+
+function isValidBusinessContact(value: string): boolean {
+  const trimmed = value.trim();
+  return EMAIL_PATTERN.test(trimmed) || PHONE_PATTERN.test(trimmed);
+}
 
 function saveLeadLocally(lead: LeadPayload) {
   try {
@@ -57,7 +63,7 @@ async function submitLead(lead: LeadPayload) {
     // Non-fatal — the localStorage fallback above already has this lead.
   }
 
-  const email = 'email' in lead ? lead.email : 'businessEmail' in lead ? lead.businessEmail : undefined;
+  const email = 'email' in lead ? lead.email : 'businessContact' in lead ? lead.businessContact : undefined;
   if (email) {
     try {
       await fetch('/api/waitlist', {
@@ -74,28 +80,36 @@ async function submitLead(lead: LeadPayload) {
 }
 
 interface LeadCaptureCardProps {
+  persona: LeadRole;
+  onSelectPersona: (role: LeadRole) => void;
   selectedDistrict: DistrictId;
-  onOpenDataRoom: () => void;
 }
 
 /**
- * The page's actual conversion engine: a role-tabbed lead form (Customer /
- * Merchant / Driver / Investor), each with its own field set and copy.
- * Investor doesn't collect anything here — it hands off straight to the
- * Data Room modal, since Investor leads are a confidential request with no
- * public sharing mechanics (unlike the other three roles, which unlock a
- * WhatsApp/referral share flow after submitting).
+ * The page's actual conversion engine: a persona-tabbed lead form (Shopper /
+ * Merchant / Driver). The active tab is driven by the shared `persona`
+ * state from app/page.tsx (also set by Hero's persona switcher) — clicking a
+ * tab here calls back up through `onSelectPersona` so both controls stay in
+ * sync. Investor has no tab here at all; it's a confidential request handled
+ * entirely by the header button / Hero CTA opening the Investor Access modal.
  */
-export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptureCardProps) {
-  const [activeTab, setActiveTab] = useState<LeadRole>('customer');
+export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: LeadCaptureCardProps) {
+  const [lastFormRole, setLastFormRole] = useState<FormRole>('shopper');
   const [email, setEmail] = useState('');
-  const [businessEmail, setBusinessEmail] = useState('');
+  const [storeName, setStoreName] = useState('');
+  const [businessContact, setBusinessContact] = useState('');
   const [district, setDistrict] = useState<DistrictId>(selectedDistrict);
   const [vehicleType, setVehicleType] = useState<VehicleType>('motorcycle');
   const [licenseConfirmed, setLicenseConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shareModalRole, setShareModalRole] = useState<WaitlistRole | null>(null);
+  const [shareModalRole, setShareModalRole] = useState<FormRole | null>(null);
+
+  useEffect(() => {
+    if (persona !== 'investor') setLastFormRole(persona);
+  }, [persona]);
+
+  const activeTab: FormRole = persona === 'investor' ? lastFormRole : persona;
 
   const recordSubmission = useUserProfileStore((state) => state.recordSubmission);
   const hasSubmitted = useUserProfileStore((state) => state.hasSubmitted);
@@ -107,28 +121,27 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
     let lead: LeadPayload;
     let identityEmail: string;
 
-    if (activeTab === 'customer') {
+    if (activeTab === 'shopper') {
       if (!EMAIL_PATTERN.test(email.trim())) return setError('Enter a valid email address.');
-      lead = { role: 'customer', email: email.trim() };
+      lead = { role: 'shopper', email: email.trim() };
       identityEmail = lead.email;
     } else if (activeTab === 'merchant') {
-      if (!EMAIL_PATTERN.test(businessEmail.trim())) return setError('Enter a valid business email address.');
-      lead = { role: 'merchant', businessEmail: businessEmail.trim(), district };
-      identityEmail = lead.businessEmail;
-    } else if (activeTab === 'driver') {
+      if (!storeName.trim()) return setError('Enter your store name.');
+      if (!isValidBusinessContact(businessContact)) return setError('Enter a valid business email or WhatsApp number.');
+      lead = { role: 'merchant', storeName: storeName.trim(), businessContact: businessContact.trim(), district };
+      identityEmail = lead.businessContact;
+    } else {
       if (!EMAIL_PATTERN.test(email.trim())) return setError('Enter a valid email address.');
       if (!licenseConfirmed) return setError('Please confirm you hold a valid UAE driving license.');
       lead = { role: 'driver', email: email.trim(), vehicleType, licenseConfirmed };
       identityEmail = lead.email;
-    } else {
-      return; // Investor tab has no form here — handled by the CTA below.
     }
 
     setIsSubmitting(true);
     await submitLead(lead);
     recordSubmission(lead.role, identityEmail);
     setIsSubmitting(false);
-    setShareModalRole(lead.role);
+    setShareModalRole(activeTab);
   };
 
   return (
@@ -139,12 +152,12 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
           Pick how you&apos;d like to join Dubai&apos;s first AI commerce &amp; logistics network.
         </p>
 
-        <div className="mx-auto mt-5 grid max-w-lg grid-cols-4 gap-1.5">
+        <div className="mx-auto mt-5 grid max-w-md grid-cols-3 gap-1.5">
           {ROLE_TABS.map(({ role, label, icon: Icon }) => (
             <button
               key={role}
               type="button"
-              onClick={() => setActiveTab(role)}
+              onClick={() => onSelectPersona(role)}
               className={clsx(
                 'flex flex-col items-center gap-1 rounded-xl border px-2 py-2.5 text-xs font-medium transition',
                 activeTab === role
@@ -162,23 +175,18 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
           {hasSubmitted(activeTab) ? (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 p-6 text-center">
               <CheckCircle2 size={28} className="text-emerald-300" />
-              <p className="text-sm text-emerald-200">
-                You&apos;re on the list{activeTab !== 'investor' ? ' — share your link to jump the queue.' : '.'}
-              </p>
-              {activeTab !== 'investor' && (
-                <button
-                  onClick={() => setShareModalRole(activeTab as WaitlistRole)}
-                  className="rounded-full bg-gradient-to-r from-cyan-400 to-gold px-5 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
-                >
-                  Open My Share Link
-                </button>
-              )}
+              <p className="text-sm text-emerald-200">You&apos;re on the list — share your link to jump the queue.</p>
+              <button
+                onClick={() => setShareModalRole(activeTab)}
+                className="rounded-full bg-gradient-to-r from-cyan-400 to-gold px-5 py-2 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
+              >
+                Open My Share Link
+              </button>
             </div>
-          ) : activeTab === 'customer' ? (
+          ) : activeTab === 'shopper' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <p className="text-xs text-neutral-400">
-                Rank in the Top {URGENCY_SPOTS.customer.totalSpots} for a AED {VOUCHER_CONVERSION.customerVoucherValueAed}{' '}
-                launch voucher &amp; instant cashback.
+                Unlock a AED {VOUCHER_CONVERSION.shopperVoucherValueAed} Founding Member Voucher &amp; early access.
               </p>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-300">
@@ -205,18 +213,18 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
           ) : activeTab === 'merchant' ? (
             <form onSubmit={handleSubmit} className="space-y-4">
               <p className="text-xs text-neutral-400">
-                Unlock 3 months at 0% commission &amp; priority AI ad search placement in your district.
+                Get Found by AI Buyers in Dubai. 0% Commission for your first 3 months.
               </p>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-300">
-                  <Mail size={12} /> Business Email
+                  <Store size={12} /> Store Name
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   required
-                  value={businessEmail}
-                  onChange={(event) => setBusinessEmail(event.target.value)}
-                  placeholder="owner@yourstore.ae"
+                  value={storeName}
+                  onChange={(event) => setStoreName(event.target.value)}
+                  placeholder="Your Store"
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
                 />
               </div>
@@ -234,6 +242,19 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-300">
+                  <MessageCircle size={12} /> Business WhatsApp or Email
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={businessContact}
+                  onChange={(event) => setBusinessContact(event.target.value)}
+                  placeholder="owner@yourstore.ae or +971 5X XXX XXXX"
+                  className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
+                />
+              </div>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
                 type="submit"
@@ -243,9 +264,11 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
                 {isSubmitting ? 'Submitting…' : 'Claim Founding Merchant Slot'}
               </button>
             </form>
-          ) : activeTab === 'driver' ? (
+          ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
-              <p className="text-xs text-neutral-400">Unlock priority route dispatch &amp; zero-commission delivery slots.</p>
+              <p className="text-xs text-neutral-400">
+                Drive More. Keep More. 0% Commission Founding Slots &amp; AI Route Dispatch.
+              </p>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-neutral-300">
                   <Mail size={12} /> Email
@@ -298,20 +321,6 @@ export function LeadCaptureCard({ selectedDistrict, onOpenDataRoom }: LeadCaptur
                 {isSubmitting ? 'Submitting…' : 'Claim Zero-Commission Slot'}
               </button>
             </form>
-          ) : (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-gold/25 bg-gold/5 p-6 text-center">
-              <Clapperboard size={24} className="text-gold" />
-              <p className="text-sm text-neutral-300">
-                Confidential — request access to the full Investor Data Room: market model, 5-stream revenue
-                breakdown, and an interactive ROI calculator.
-              </p>
-              <button
-                onClick={onOpenDataRoom}
-                className="rounded-full bg-gradient-to-r from-cyan-400 to-gold px-5 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
-              >
-                Request Data Room Access
-              </button>
-            </div>
           )}
         </div>
       </div>

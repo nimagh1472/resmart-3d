@@ -1,14 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { URGENCY_SPOTS } from '@/lib/pitchData';
+import { SHOPPER_RANK_CONFIG, URGENCY_SPOTS } from '@/lib/pitchData';
 import type { LeadRole } from '@/types';
 
-/** Only Customer/Merchant/Driver have a waitlist position + share mechanic — Investor is a confidential request, never gamified/shared. */
+/** Only Shopper/Merchant/Driver have a waitlist position + share mechanic — Investor is a confidential request, never gamified/shared. */
 type WaitlistRole = Exclude<LeadRole, 'investor'>;
-
-const MAX_SHARE_BOOSTS_PER_ROLE = 3;
-const SHARE_BOOST_JUMP = 10;
-const INVITE_CREDIT_JUMP = 5;
 
 interface WaitlistEntry {
   waitlistPosition: number;
@@ -42,17 +38,38 @@ function hashEmailToReferralCode(email: string): string {
   return hash.toString(36).toUpperCase();
 }
 
-/** Seeds a starting position somewhere within the still-open pool, so every visitor's "line" feels distinct rather than everyone starting at the same number. */
+/**
+ * Seeds a starting position somewhere within the still-open pool, so every
+ * visitor's "line" feels distinct rather than everyone starting at the same
+ * number. Shopper uses the large-scale rank model (SHOPPER_RANK_CONFIG);
+ * Merchant/Driver use the small 50-slot URGENCY_SPOTS pools.
+ */
 function seedWaitlistPosition(role: WaitlistRole): number {
+  if (role === 'shopper') {
+    const { seedRangeMin, seedRangeMax } = SHOPPER_RANK_CONFIG;
+    return seedRangeMin + Math.floor(Math.random() * (seedRangeMax - seedRangeMin + 1));
+  }
   const pool = URGENCY_SPOTS[role];
   const openSlots = Math.max(1, pool.totalSpots - pool.baseClaimed);
   return 1 + Math.floor(Math.random() * openSlots);
 }
 
+function shareBoostJump(role: WaitlistRole): number {
+  return role === 'shopper' ? SHOPPER_RANK_CONFIG.pointsPerShare : 10;
+}
+
+function inviteCreditJump(role: WaitlistRole): number {
+  return role === 'shopper' ? SHOPPER_RANK_CONFIG.pointsPerInvite : 5;
+}
+
+function maxShareBoosts(role: WaitlistRole): number {
+  return role === 'shopper' ? SHOPPER_RANK_CONFIG.maxShareBoosts : 3;
+}
+
 /**
  * Landing-page identity store: the email captured at lead submission plus a
- * per-role waitlist position that improves via WhatsApp/link sharing (+10,
- * capped) and successful invites (+5 each, reported back by the lightweight
+ * per-role waitlist position that improves via WhatsApp/link sharing
+ * (capped) and successful invites (reported back by the lightweight
  * server-side counter in app/api/waitlist/route.ts). Persisted to
  * localStorage so a returning visitor resumes their position instead of
  * losing progress.
@@ -86,14 +103,14 @@ export const useUserProfileStore = create<UserProfileState>()(
 
       applyShareBoost: (role) => {
         const entry = get().waitlist[role];
-        if (!entry || entry.shareBoostCount >= MAX_SHARE_BOOSTS_PER_ROLE) return;
+        if (!entry || entry.shareBoostCount >= maxShareBoosts(role)) return;
         set((state) => ({
           waitlist: {
             ...state.waitlist,
             [role]: {
               ...entry,
               shareBoostCount: entry.shareBoostCount + 1,
-              waitlistPosition: Math.max(1, entry.waitlistPosition - SHARE_BOOST_JUMP),
+              waitlistPosition: Math.max(1, entry.waitlistPosition - shareBoostJump(role)),
             },
           },
         }));
@@ -109,7 +126,7 @@ export const useUserProfileStore = create<UserProfileState>()(
             [role]: {
               ...entry,
               inviteCredits: entry.inviteCredits + newInvites,
-              waitlistPosition: Math.max(1, entry.waitlistPosition - newInvites * INVITE_CREDIT_JUMP),
+              waitlistPosition: Math.max(1, entry.waitlistPosition - newInvites * inviteCreditJump(role)),
             },
           },
         }));

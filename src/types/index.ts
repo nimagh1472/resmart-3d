@@ -1,5 +1,5 @@
 /** The four lead-capture personas the landing page targets. Used as the single role concept everywhere (there is no separate "gameplay role" anymore). */
-export type LeadRole = 'customer' | 'merchant' | 'driver' | 'investor';
+export type LeadRole = 'shopper' | 'merchant' | 'driver' | 'investor';
 
 export interface PitchMetric {
   value: number | string;
@@ -26,16 +26,17 @@ export interface DistrictMetrics {
 
 export type VehicleType = 'motorcycle' | 'ev' | 'sedan';
 
-export type TicketSizeBand = '100k-250k' | '250k-500k' | '500k-1m' | '1m-plus';
+export type TicketSizeBand = '100k-500k' | '500k-1m' | '1m-2m' | '2m-3.5m' | '3.5m-plus';
 
-export interface CustomerLeadPayload {
-  role: 'customer';
+export interface ShopperLeadPayload {
+  role: 'shopper';
   email: string;
 }
 
 export interface MerchantLeadPayload {
   role: 'merchant';
-  businessEmail: string;
+  storeName: string;
+  businessContact: string;
   district: DistrictId;
 }
 
@@ -51,9 +52,10 @@ export interface InvestorLeadPayload {
   name: string;
   fundOrEntity: string;
   ticketSizeBand: TicketSizeBand;
+  workEmailOrLinkedIn: string;
 }
 
-export type LeadPayload = CustomerLeadPayload | MerchantLeadPayload | DriverLeadPayload | InvestorLeadPayload;
+export type LeadPayload = ShopperLeadPayload | MerchantLeadPayload | DriverLeadPayload | InvestorLeadPayload;
 
 export interface VoucherReward {
   voucherCount: number;
@@ -68,17 +70,14 @@ export interface WorldBounds {
   maxZ: number;
 }
 
-/** Inputs for the Investor Data Room's interactive ROI calculator (lifted from the old InvestorGame minigame's model). */
-export interface InvestorRoiInputs {
-  dailyTargetOrders: number;
-  staffOpsCostAed: number;
-  fleetSize: number;
-  efficiencyPct: number;
+/** Inputs for the Investor Access modal's interactive Seed Scenario Model. */
+export interface SeedScenarioInputs {
+  seedAllocationAed: number;
+  projectedMerchantScale: number;
 }
 
-export interface InvestorRoiResult {
-  ordersFulfilled: number;
-  netProfitAed: number;
-  netMarginPct: number;
-  roiPct: number;
+export interface SeedScenarioResult {
+  projectedArrAed: number;
+  estimatedRunwayMonths: number;
+  arrCoverageMultiple: number;
 }

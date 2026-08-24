@@ -7,6 +7,7 @@ import { ACESFilmicToneMapping, MathUtils, Vector3 } from 'three';
 import { Environment } from '@/components/3d/Environment';
 import { World } from '@/components/3d/World';
 import { usePointerOffset, type PointerOffset } from '@/hooks/useAmbientCamera';
+import type { DistrictId } from '@/types';
 
 function detectIsMobile(): boolean {
   if (typeof window === 'undefined') return false;
@@ -49,14 +50,20 @@ function AmbientCameraRig({ pointerOffsetRef }: { pointerOffsetRef: { current: P
   return null;
 }
 
+interface AmbientSceneProps {
+  selectedDistrict?: DistrictId;
+  hoveredDistrict?: DistrictId | null;
+}
+
 /**
- * Purely decorative ambient 3D backdrop — a glowing Dubai night skyline
- * with a slow pointer-driven camera drift. No physics, no vehicle, no
- * gameplay. dpr capped to [1, 1.25] and PerformanceMonitor/AdaptiveDpr keep
- * this at a guaranteed-smooth frame rate regardless of what's rendered on
- * top of it in the DOM.
+ * Ambient 3D backdrop — a glowing Dubai night skyline with a slow
+ * pointer-driven camera drift, per-district glow zones, and a looping
+ * network pulse. No physics, no vehicle, no gameplay. dpr is capped to
+ * [1, 1.25] on desktop and locked to exactly 1 on mobile (<768px/touch), and
+ * PerformanceMonitor/AdaptiveDpr keep this at a guaranteed-smooth frame rate
+ * regardless of what's rendered on top of it in the DOM.
  */
-export function AmbientScene() {
+export function AmbientScene({ selectedDistrict, hoveredDistrict }: AmbientSceneProps) {
   const [isMobile] = useState(detectIsMobile);
   const [isDegraded, setIsDegraded] = useState(false);
   const pointerOffsetRef = usePointerOffset();
@@ -69,7 +76,7 @@ export function AmbientScene() {
     <Canvas
       shadows={false}
       camera={{ position: [0, BASE_HEIGHT, BASE_RADIUS], fov: 45, near: 0.5, far: 800 }}
-      dpr={[1, 1.25]}
+      dpr={isMobile ? 1 : [1, 1.25]}
       performance={{ min: 0.5 }}
       gl={{
         toneMapping: ACESFilmicToneMapping,
@@ -85,7 +92,7 @@ export function AmbientScene() {
       <AdaptiveDpr pixelated={false} />
       <Suspense fallback={null}>
         <Environment isMobile={isMobile || isDegraded} />
-        <World isMobile={isMobile || isDegraded} />
+        <World isMobile={isMobile || isDegraded} selectedDistrict={selectedDistrict} hoveredDistrict={hoveredDistrict} />
         <AmbientCameraRig pointerOffsetRef={pointerOffsetRef} />
       </Suspense>
     </Canvas>

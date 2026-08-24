@@ -3,7 +3,7 @@
 import { memo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
-import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Stars } from '@react-three/drei';
+import { Environment as EnvironmentHDRI, Grid, MeshReflectorMaterial, Stars } from '@react-three/drei';
 import { type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
 
@@ -14,8 +14,11 @@ import { WORLD_BOUNDS } from '@/lib/pitchData';
 // props via light.position.set(...), whereas reusing one Vector3 object
 // across multiple JSX props would alias light.position itself.
 const SUN_DIRECTION: [number, number, number] = [70, 16, -55];
-const SKY_COLOR = '#0B1622';
-const FOG_COLOR = '#0B1622';
+// Deep Obsidian Slate — matches the document background (globals.css
+// --background / tailwind's `asphalt`) so scrolling past content reveals a
+// seamless dark space with no canvas/DOM color seam.
+const SKY_COLOR = '#0A0D0F';
+const FOG_COLOR = '#0A0D0F';
 const FOG_NEAR = 50;
 const FOG_FAR = 260;
 
@@ -91,6 +94,7 @@ export const Environment = memo(function Environment({ isMobile }: EnvironmentPr
 
       <fog attach="fog" args={[FOG_COLOR, FOG_NEAR, FOG_FAR]} />
 
+      <SzrGridPlane isMobile={isMobile} />
       <CoastalWater isMobile={isMobile} />
 
       {!isMobile && (
@@ -101,6 +105,31 @@ export const Environment = memo(function Environment({ isMobile }: EnvironmentPr
     </>
   );
 });
+
+/**
+ * Ground-level "Sheikh Zayed Road grid plane" — a cyan-tinted infinite grid
+ * standing in for the district road network beneath the skyline, giving the
+ * floating buildings/glow zones a visual anchor. Fades out closer on mobile
+ * to keep the shader's footprint cheap.
+ */
+function SzrGridPlane({ isMobile }: { isMobile: boolean }) {
+  return (
+    <Grid
+      position={[0, 0.01, 0]}
+      args={[10, 10]}
+      cellSize={6}
+      cellThickness={0.5}
+      cellColor="#0F2A33"
+      sectionSize={30}
+      sectionThickness={1.1}
+      sectionColor="#00E5FF"
+      fadeDistance={isMobile ? 70 : 150}
+      fadeStrength={1.2}
+      followCamera={false}
+      infiniteGrid
+    />
+  );
+}
 
 /**
  * Dubai Creek/waterfront stand-in beyond the drivable WORLD_BOUNDS: a large

@@ -4,15 +4,15 @@ import { Briefcase, Sparkles } from 'lucide-react';
 import { LAUNCH_TIMESTAMP, padCountdownValue, useCountdown } from '@/hooks/useCountdown';
 
 interface StickyHeaderProps {
-  onOpenDataRoom: () => void;
+  onOpenInvestorAccess: () => void;
 }
 
 /**
  * Minimalist glassmorphism top bar: wordmark, a compact launch countdown,
- * and the Investor Data Room CTA — always reachable regardless of scroll
- * position.
+ * and the "Investor Access" CTA — the single header-level entry point into
+ * the Investor Access modal, always reachable regardless of scroll position.
  */
-export function StickyHeader({ onOpenDataRoom }: StickyHeaderProps) {
+export function StickyHeader({ onOpenInvestorAccess }: StickyHeaderProps) {
   const countdown = useCountdown(LAUNCH_TIMESTAMP);
 
   return (
@@ -39,12 +39,12 @@ export function StickyHeader({ onOpenDataRoom }: StickyHeaderProps) {
       </div>
 
       <button
-        onClick={onOpenDataRoom}
+        onClick={onOpenInvestorAccess}
         className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
       >
         <Briefcase size={13} />
-        <span className="hidden sm:inline">Investor Data Room</span>
-        <span className="sm:hidden">Data Room</span>
+        <span className="hidden sm:inline">Investor Access →</span>
+        <span className="sm:hidden">Investor →</span>
       </button>
     </header>
   );

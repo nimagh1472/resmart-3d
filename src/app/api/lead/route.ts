@@ -10,14 +10,26 @@ function isValidLead(lead: unknown): lead is LeadPayload {
   if (!lead || typeof lead !== 'object') return false;
   const candidate = lead as Record<string, unknown>;
   switch (candidate.role) {
-    case 'customer':
+    case 'shopper':
       return typeof candidate.email === 'string' && candidate.email.trim().length > 0;
     case 'merchant':
-      return typeof candidate.businessEmail === 'string' && candidate.businessEmail.trim().length > 0 && typeof candidate.district === 'string';
+      return (
+        typeof candidate.storeName === 'string' &&
+        candidate.storeName.trim().length > 0 &&
+        typeof candidate.businessContact === 'string' &&
+        candidate.businessContact.trim().length > 0 &&
+        typeof candidate.district === 'string'
+      );
     case 'driver':
       return typeof candidate.email === 'string' && candidate.email.trim().length > 0 && typeof candidate.vehicleType === 'string';
     case 'investor':
-      return typeof candidate.name === 'string' && candidate.name.trim().length > 0 && typeof candidate.fundOrEntity === 'string';
+      return (
+        typeof candidate.name === 'string' &&
+        candidate.name.trim().length > 0 &&
+        typeof candidate.fundOrEntity === 'string' &&
+        typeof candidate.workEmailOrLinkedIn === 'string' &&
+        candidate.workEmailOrLinkedIn.trim().length > 0
+      );
     default:
       return false;
   }

@@ -62,11 +62,11 @@ body {
  *   z-0   fixed ambient 3D backdrop  AmbientScene (see app/page.tsx's z-0 wrapper)
  *   z-10  page content               main wrapper + inner content column
  *   z-30  sticky page chrome         StickyHeader
- *   z-50  stacking modal             ShareSuccessModal, InvestorDataRoomModal
+ *   z-50  stacking modal             ShareSuccessModal, InvestorAccessModal
  */
 
 /* Shared "opening" transition for every modal/panel (ShareSuccessModal,
-   InvestorDataRoomModal) — a quick fade+scale-in on the panel itself so
+   InvestorAccessModal) — a quick fade+scale-in on the panel itself so
    modals never just hard-pop into view. */
 @keyframes modal-in {
   from {
@@ -81,4 +81,38 @@ body {
 
 .animate-modal-in {
   animation: modal-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/*
+ * NetworkFlowStrip's per-node pulse (components/ui/NetworkFlowStrip.tsx) —
+ * each of the 4 nodes runs the same 6s cycle, staggered by 1.5s via an
+ * inline animation-delay, so a single glow reads as travelling
+ * SEARCH -> MATCH -> TRANSACT -> FULFILL once every 6 seconds, matching the
+ * 3D backdrop's NetworkPulse loop period.
+ */
+@keyframes network-pulse {
+  0% {
+    opacity: 0.35;
+    transform: scale(1);
+    box-shadow: none;
+  }
+  4% {
+    opacity: 1;
+    transform: scale(1.6);
+    box-shadow: 0 0 10px 2px rgba(0, 229, 255, 0.7);
+  }
+  8% {
+    opacity: 0.35;
+    transform: scale(1);
+    box-shadow: none;
+  }
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+.network-flow-node {
+  animation: network-pulse 6s ease-in-out infinite;
 }

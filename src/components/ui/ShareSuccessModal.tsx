@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Check, Copy, Gem, MessageCircle, Share2, X } from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
+import { SHOPPER_RANK_CONFIG } from '@/lib/pitchData';
 import type { LeadRole } from '@/types';
 
 type WaitlistRole = Exclude<LeadRole, 'investor'>;
 
 const ROLE_LABELS: Record<WaitlistRole, string> = {
-  customer: 'Customer',
+  shopper: 'Shopper',
   merchant: 'Merchant',
   driver: 'Driver',
 };
@@ -22,12 +23,15 @@ interface ShareSuccessModalProps {
 }
 
 /**
- * Post-submit share card for Customer/Merchant/Driver — never shown to
+ * Post-submit share card for Shopper/Merchant/Driver — never shown to
  * Investor leads (those are confidential, no public sharing per the brief).
- * Each share action jumps the visitor's waitlist position by 10 (capped
- * server-side in useUserProfileStore); an interval poll against
- * /api/waitlist's best-effort invite counter credits +5 per successful
- * invite once it reports new signups against this visitor's referral code.
+ * For Shopper specifically, also renders the invite-to-rank growth-loop
+ * progress bar ("Invite N more friends -> Unlock Top 50 Rank"), computed
+ * live off SHOPPER_RANK_CONFIG + the store's real share/invite counters.
+ * WhatsApp is the primary share action (per the brief's growth-loop spec);
+ * native share/copy-link is secondary. An interval poll against
+ * /api/waitlist's best-effort invite counter credits real invites once it
+ * reports new signups against this visitor's referral code.
  */
 export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalProps) {
   const referralCode = useUserProfileStore((state) => state.referralCode);
@@ -100,6 +104,15 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
       )}`
     : '';
 
+  const handleWhatsappShareClick = () => applyShareBoost(role);
+
+  // Shopper-only growth-loop math: how many more invites close the gap to
+  // the Top 50 tier, and where that would land the visitor's rank.
+  const { topTierRank, topTierLabel, pointsPerInvite } = SHOPPER_RANK_CONFIG;
+  const invitesNeeded = Math.max(0, Math.ceil((entry.waitlistPosition - topTierRank) / pointsPerInvite));
+  const projectedPosition = Math.max(1, entry.waitlistPosition - invitesNeeded * pointsPerInvite);
+  const hasReachedTopTier = entry.waitlistPosition <= topTierRank;
+
   return (
     <div className="pointer-events-auto hud-scrim absolute inset-0 z-50 flex items-center justify-center p-4">
       <div className="animate-modal-in glass-panel relative w-full max-w-sm rounded-3xl p-5">
@@ -125,14 +138,48 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
           </div>
         </div>
 
+        {role === 'shopper' && (
+          <div className="mt-4 rounded-xl border border-gold/25 bg-gold/5 p-3">
+            <p className="text-center text-xs font-medium text-gold">
+              {hasReachedTopTier
+                ? `You're in the ${topTierLabel} rank!`
+                : `Invite ${invitesNeeded} more friend${invitesNeeded === 1 ? '' : 's'} → Unlock ${topTierLabel} Rank (#${entry.waitlistPosition} → #${projectedPosition})`}
+            </p>
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-cyan-400 to-gold transition-all"
+                style={{
+                  width: `${Math.min(100, Math.max(4, (1 - entry.waitlistPosition / SHOPPER_RANK_CONFIG.seedRangeMax) * 100))}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-center text-xs text-emerald-300">
-          {entry.shareBoostCount >= 3
+          {entry.shareBoostCount >= SHOPPER_RANK_CONFIG.maxShareBoosts
             ? 'Max share boost reached — invite friends for more.'
-            : `Share for an instant +10 jump (${3 - entry.shareBoostCount} left) — every invite adds +5 more.`}
+            : `Share for an instant rank boost (${SHOPPER_RANK_CONFIG.maxShareBoosts - entry.shareBoostCount} left) — every invite moves you further.`}
         </div>
 
         <div className="mt-4">
-          <div className="flex items-center gap-2">
+          <a
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleWhatsappShareClick}
+            aria-disabled={!whatsappShareUrl}
+            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
+          >
+            <MessageCircle size={14} /> Share on WhatsApp
+          </a>
+          <button
+            onClick={handleNativeShare}
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-white/20 bg-white/5 px-4 py-2.5 text-sm font-medium text-neutral-200 transition hover:bg-white/10"
+          >
+            <Share2 size={14} /> Share My Spot
+          </button>
+          <div className="mt-2 flex items-center gap-2">
             <input
               readOnly
               value={referralLink}
@@ -147,22 +194,6 @@ export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalPr
               {copied ? 'Copied' : 'Copy Link'}
             </button>
           </div>
-          <button
-            onClick={handleNativeShare}
-            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
-          >
-            <Share2 size={14} /> Share My Spot
-          </button>
-          <a
-            href={whatsappShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => applyShareBoost(role)}
-            aria-disabled={!whatsappShareUrl}
-            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
-          >
-            <MessageCircle size={14} /> Share on WhatsApp
-          </a>
         </div>
       </div>
     </div>
