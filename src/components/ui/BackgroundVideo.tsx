@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const VIDEO_SRC = 'https://v1.coverr.co/549301984/1080p.mp4';
+const VIDEO_SRC = '/assets/cyber-dubai-loop.mp4';
 
 /**
  * Full-viewport looping background video — replaces the old Three.js ambient
@@ -27,7 +27,7 @@ export function BackgroundVideo() {
           // versions unless the lowercase webkit attribute is also present.
           webkit-playsinline="true"
           disablePictureInPicture
-          className="fixed inset-0 z-0 h-full w-full object-cover pointer-events-none opacity-40"
+          className="fixed inset-0 z-0 h-full w-full object-cover pointer-events-none opacity-60"
           onError={() => setHasError(true)}
         >
           <source src={VIDEO_SRC} type="video/mp4" />
