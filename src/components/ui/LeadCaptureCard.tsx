@@ -145,7 +145,7 @@ export function LeadCaptureCard({ persona, onSelectPersona, selectedDistrict }: 
   };
 
   return (
-    <section id="lead-capture" className="w-full px-4 py-10">
+    <section id="lead-capture" className="w-full px-4 py-12 sm:py-16">
       <div className="glass-panel mx-auto w-full max-w-2xl rounded-3xl p-6 sm:p-8">
         <h2 className="text-center text-xl font-semibold text-white sm:text-2xl">Join the ReSmart AI Launch</h2>
         <p className="mt-1 text-center text-sm text-neutral-400">

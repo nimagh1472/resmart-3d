@@ -26,7 +26,7 @@ export function RegistrationHubs({ onSelectPersona, onOpenInvestorAccess }: Regi
   };
 
   return (
-    <section className="w-full px-4 py-10">
+    <section className="w-full px-4 py-12 sm:py-16">
       <div className="mx-auto grid w-full max-w-4xl gap-4 sm:grid-cols-3">
         <button
           type="button"

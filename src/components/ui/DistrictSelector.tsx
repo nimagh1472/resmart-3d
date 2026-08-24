@@ -15,22 +15,17 @@ function formatGmv(value: number): string {
 interface DistrictSelectorProps {
   selectedDistrict: DistrictId;
   onSelectDistrict: (id: DistrictId) => void;
-  onHoverDistrict?: (id: DistrictId | null) => void;
 }
 
 /**
- * Neon district bar: switching districts updates the local metrics card and
- * previews the 3D backdrop's glow zone for that district (see
- * components/3d/World.tsx's DistrictGlowZones, driven by the
- * selectedDistrict/hoveredDistrict state app/page.tsx threads down to
- * AmbientScene — the canvas itself is pointer-events:none, so this 2D bar is
- * the only source of hover/select events). Below it, live "spots remaining"
- * urgency counters for Merchant/Driver (base pool from
- * pitchData.URGENCY_SPOTS, topped up by the best-effort in-memory counter in
- * app/api/waitlist/route.ts) — Shopper uses the separate large-scale rank
- * model surfaced in ShareSuccessModal instead of a spot pool.
+ * Neon district bar: switching districts updates the local metrics card
+ * below it. Also carries live "spots remaining" urgency counters for
+ * Merchant/Driver (base pool from pitchData.URGENCY_SPOTS, topped up by the
+ * best-effort in-memory counter in app/api/waitlist/route.ts) — Shopper uses
+ * the separate large-scale rank model surfaced in ShareSuccessModal instead
+ * of a spot pool.
  */
-export function DistrictSelector({ selectedDistrict, onSelectDistrict, onHoverDistrict }: DistrictSelectorProps) {
+export function DistrictSelector({ selectedDistrict, onSelectDistrict }: DistrictSelectorProps) {
   const [liveCounts, setLiveCounts] = useState<Partial<Record<LeadRole, number>>>({});
 
   useEffect(() => {
@@ -51,7 +46,7 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict, onHoverDi
   const activeDistrict = DISTRICTS.find((entry) => entry.id === selectedDistrict) ?? DISTRICTS[0];
 
   return (
-    <section className="w-full px-4 py-10">
+    <section className="w-full px-4 py-12 sm:py-16">
       <div className="glass-panel mx-auto w-full max-w-3xl rounded-3xl p-6 sm:p-8">
         <div className="flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-cyan-300">
           <MapPin size={13} /> Dubai Launch Districts
@@ -62,10 +57,6 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict, onHoverDi
             <button
               key={district.id}
               onClick={() => onSelectDistrict(district.id)}
-              onMouseEnter={() => onHoverDistrict?.(district.id)}
-              onMouseLeave={() => onHoverDistrict?.(null)}
-              onFocus={() => onHoverDistrict?.(district.id)}
-              onBlur={() => onHoverDistrict?.(null)}
               className={clsx(
                 'rounded-full border px-3 py-2 text-xs font-medium transition',
                 selectedDistrict === district.id

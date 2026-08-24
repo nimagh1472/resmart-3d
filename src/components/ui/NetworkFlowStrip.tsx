@@ -5,15 +5,13 @@ import { ArrowRight } from 'lucide-react';
 const NETWORK_STEPS = ['SEARCH', 'MATCH', 'TRANSACT', 'FULFILL'];
 
 /**
- * Lightweight DOM/CSS stand-in for the 3D backdrop's NetworkPulse
- * (components/3d/World.tsx) — a 6s-looping dot travelling the same
- * SEARCH -> MATCH -> TRANSACT -> FULFILL sequence, rendered in-flow so the
- * concept reads even on small screens where the fixed 3D canvas is mostly
- * background texture rather than a legible diagram.
+ * Lightweight DOM/CSS "Network Pulse" strip — a 6s-looping dot travelling
+ * the SEARCH -> MATCH -> TRANSACT -> FULFILL sequence, visualizing ReSmart
+ * AI's matching/fulfillment pipeline inline in the page flow.
  */
 export function NetworkFlowStrip() {
   return (
-    <section className="w-full px-4 py-6">
+    <section className="w-full px-4 py-8">
       <div className="glass-panel network-flow-strip mx-auto flex w-full max-w-2xl items-center justify-between gap-1 rounded-2xl px-4 py-4 sm:gap-2 sm:px-6">
         {NETWORK_STEPS.map((step, index) => (
           <div key={step} className="flex flex-1 items-center gap-1 sm:gap-2">

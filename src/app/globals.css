@@ -59,8 +59,9 @@ body {
 /*
  * App-wide z-index scale — every fixed/absolute overlay should use one of
  * these tiers rather than an ad-hoc value, so stacking order stays legible:
- *   z-0   fixed ambient 3D backdrop  AmbientScene (see app/page.tsx's z-0 wrapper)
- *   z-10  page content               main wrapper + inner content column
+ *   z-0   fixed background video     BackgroundVideo's <video> (see app/page.tsx)
+ *   z-10  vignette overlay           BackgroundVideo's gradient scrim
+ *   z-20  page content               main wrapper + inner content column
  *   z-30  sticky page chrome         StickyHeader
  *   z-50  stacking modal             ShareSuccessModal, InvestorAccessModal
  */

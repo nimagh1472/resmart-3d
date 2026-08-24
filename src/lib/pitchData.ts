@@ -7,7 +7,6 @@ import type {
   SeedScenarioInputs,
   SeedScenarioResult,
   VoucherReward,
-  WorldBounds,
 } from '@/types';
 
 /**
@@ -15,13 +14,6 @@ import type {
  * launch-campaign constant used across the landing page. Components must
  * import from here rather than hard-coding financial or market figures inline.
  */
-
-export const WORLD_BOUNDS: WorldBounds = {
-  minX: -100,
-  maxX: 100,
-  minZ: -100,
-  maxZ: 100,
-};
 
 export const PITCH_DECK_PATH = '/assets/resmart-pitch-deck.pdf';
 
@@ -112,8 +104,7 @@ export const REVENUE_STREAMS: RevenueStream[] = [
 /**
  * Dubai launch districts surfaced in the neon district selector — each has
  * its own illustrative density/efficiency/GMV figures so switching districts
- * visibly changes the page's stats (and the 3D backdrop's glow zones)
- * rather than just relabeling a static card.
+ * visibly changes the page's stats rather than just relabeling a static card.
  */
 export const DISTRICTS: DistrictMetrics[] = [
   { id: 'downtown', label: 'Downtown Dubai', merchantDensity: 420, aiRouteEfficiencyPct: 94, regionalGmvAed: 62_000_000 },

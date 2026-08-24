@@ -19,7 +19,7 @@ const HOW_IT_WORKS: Array<{ icon: typeof Search; label: string; description: str
 
 export function HowItWorksCards() {
   return (
-    <section className="w-full px-4 py-10">
+    <section className="w-full px-4 py-12 sm:py-16">
       <div className="glass-panel mx-auto w-full max-w-2xl rounded-3xl p-6 sm:p-8">
         <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-cyan-300">How the Network Works</h2>
         <div className="mx-auto mt-4 grid gap-2.5 sm:grid-cols-3">

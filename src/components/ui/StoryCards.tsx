@@ -60,7 +60,7 @@ function StoryCard({
  */
 export function StoryCards() {
   return (
-    <section className="w-full px-4 py-10">
+    <section className="w-full px-4 py-12 sm:py-16">
       <div className="mx-auto grid w-full max-w-4xl gap-4 sm:grid-cols-3">
         {STORY_CARDS.map((card, index) => (
           <StoryCard key={card.title} icon={card.icon} title={card.title} description={card.description} index={index} />

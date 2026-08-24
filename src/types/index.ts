@@ -63,13 +63,6 @@ export interface VoucherReward {
   code: string | null;
 }
 
-export interface WorldBounds {
-  minX: number;
-  maxX: number;
-  minZ: number;
-  maxZ: number;
-}
-
 /** Inputs for the Investor Access modal's interactive Seed Scenario Model. */
 export interface SeedScenarioInputs {
   seedAllocationAed: number;
