@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-const VIDEO_SRC = '/assets/cyber-dubai-loop.mp4';
+const VIDEO_SRC = 'https://v1.coverr.co/549301984/1080p.mp4';
 
 /**
  * Full-viewport looping background video — replaces the old Three.js ambient
