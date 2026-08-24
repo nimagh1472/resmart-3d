@@ -29,9 +29,9 @@ export default function Home() {
   const openDataRoom = () => setIsDataRoomOpen(true);
 
   return (
-    <main className="relative min-h-screen w-full bg-asphalt">
+    <main className="relative z-10 min-h-screen w-full overflow-x-hidden bg-asphalt">
       <ErrorBoundary>
-        <div className="fixed inset-0 -z-10">
+        <div className="pointer-events-none fixed inset-0 z-0 h-screen w-screen">
           <AmbientScene />
         </div>
       </ErrorBoundary>

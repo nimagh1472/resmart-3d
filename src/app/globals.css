@@ -7,7 +7,7 @@
  * system-theme-aware: this is a pitch experience, not a themable app).
  */
 :root {
-  --background: #0b0f12;
+  --background: #0a0d0f;
   --foreground: #e5e7eb;
 }
 
@@ -59,7 +59,8 @@ body {
 /*
  * App-wide z-index scale — every fixed/absolute overlay should use one of
  * these tiers rather than an ad-hoc value, so stacking order stays legible:
- *   z-10  fixed ambient 3D backdrop  AmbientScene (see app/page.tsx's -z-10 wrapper)
+ *   z-0   fixed ambient 3D backdrop  AmbientScene (see app/page.tsx's z-0 wrapper)
+ *   z-10  page content               main wrapper + inner content column
  *   z-30  sticky page chrome         StickyHeader
  *   z-50  stacking modal             ShareSuccessModal, InvestorDataRoomModal
  */

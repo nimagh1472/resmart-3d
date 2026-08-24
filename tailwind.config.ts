@@ -14,7 +14,7 @@ const config: Config = {
         // Dubai Cyber-Luxury brand palette — use these instead of ad-hoc
         // neutral-950/rgba(...) literals for HUD chrome and modal surfaces,
         // so every glass panel/scrim in the app shares one source of truth.
-        asphalt: "#0B0F12", // Deep Obsidian Slate — background + modal scrim tint
+        asphalt: "#0A0D0F", // Deep Obsidian Slate — background + modal scrim tint
         neonCyan: "#00E5FF", // Electric Cyan
         gold: "#D4AF37", // Brushed Gold — secondary accent
         darkGlass: "#0F172A", // Translucent Dark Cyber-Glass base — use with /85 opacity, e.g. bg-darkGlass/85
