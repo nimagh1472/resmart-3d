@@ -1,93 +1,50 @@
 'use client';
 
+import { useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ErrorBoundary, PitchDeckFallback } from '@/components/ui/ErrorBoundary';
-import { useRoleStore } from '@/hooks/useRoleStore';
-import { Overlay } from '@/components/ui/Overlay';
-import { RoleSelector } from '@/components/ui/RoleSelector';
-import { LandingOverlay } from '@/components/ui/LandingOverlay';
-import { AccountPanel } from '@/components/ui/AccountPanel';
-import { ShareRankCard } from '@/components/ui/ShareRankCard';
-import { QuickDeck } from '@/components/ui/QuickDeck';
-import { CinematicBar } from '@/components/ui/CinematicBar';
-import { LeadCaptureModal } from '@/components/ui/LeadCaptureModal';
-import { FeaturePopupHUD } from '@/components/ui/FeaturePopupHUD';
-import { StoryHUD } from '@/components/ui/StoryHUD';
-import { Leaderboard } from '@/components/ui/Leaderboard';
-import { InvestorGame } from '@/components/games/InvestorGame';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { StickyHeader } from '@/components/ui/StickyHeader';
+import { Hero } from '@/components/ui/Hero';
+import { LeadCaptureCard } from '@/components/ui/LeadCaptureCard';
+import { DistrictSelector } from '@/components/ui/DistrictSelector';
+import { InvestorDataRoomModal } from '@/components/ui/InvestorDataRoomModal';
+import { Footer } from '@/components/ui/Footer';
+import { DEFAULT_DISTRICT_ID } from '@/lib/pitchData';
+import type { DistrictId } from '@/types';
 
-const Experience = dynamic(() => import('@/components/3d/Experience').then((mod) => mod.Experience), {
+const AmbientScene = dynamic(() => import('@/components/3d/AmbientScene').then((mod) => mod.AmbientScene), {
   ssr: false,
-  loading: () => (
-    <div className="flex h-screen w-screen items-center justify-center bg-neutral-950 text-sm text-neutral-400">
-      Loading ReSmart AI experience…
-    </div>
-  ),
+  loading: () => null,
 });
 
-const DriverGame = dynamic(() => import('@/components/games/DriverGame').then((mod) => mod.DriverGame), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-screen w-screen items-center justify-center bg-neutral-950 text-sm text-neutral-400">
-      Loading Driver Challenge…
-    </div>
-  ),
-});
-
-const CustomerGame = dynamic(() => import('@/components/games/CustomerGame').then((mod) => mod.CustomerGame), {
-  ssr: false,
-  loading: () => (
-    <div className="flex h-screen w-screen items-center justify-center bg-neutral-950 text-sm text-neutral-400">
-      Loading Customer Challenge…
-    </div>
-  ),
-});
-
+/**
+ * Single continuous landing page — no more "session"/role gating. The
+ * ambient 3D skyline is a fixed, non-interactive backdrop behind the actual
+ * content (header, hero, lead-capture card, district/urgency bar, footer),
+ * with the Investor Data Room as the one modal, reachable from three places.
+ */
 export default function Home() {
-  const isWebGLError = useRoleStore((state) => state.isWebGLError);
-  const activeRole = useRoleStore((state) => state.activeRole);
-  // Driver and Customer personas each fully replace the open-city pitch
-  // experience with their own self-contained mini-game (see
-  // components/games/) — the rest of the pitch HUD
-  // (Overlay/StoryHUD/MarketEngineHUD/etc.) assumes the open-city AGENT/
-  // CUSTOMER loops, so it's swapped out for both too. Only the Investor
-  // cinematic tour still uses the main Experience.
-  const isDriverGame = activeRole === 'AGENT';
-  const isCustomerGame = activeRole === 'CUSTOMER';
-  const isMiniGame = isDriverGame || isCustomerGame;
+  const [selectedDistrict, setSelectedDistrict] = useState<DistrictId>(DEFAULT_DISTRICT_ID);
+  const [isDataRoomOpen, setIsDataRoomOpen] = useState(false);
+  const openDataRoom = () => setIsDataRoomOpen(true);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-neutral-950">
+    <main className="relative min-h-screen w-full bg-asphalt">
       <ErrorBoundary>
-        {isDriverGame ? <DriverGame /> : isCustomerGame ? <CustomerGame /> : <Experience />}
+        <div className="fixed inset-0 -z-10">
+          <AmbientScene />
+        </div>
       </ErrorBoundary>
 
-      {!isWebGLError && (
-        <>
-          {!isMiniGame && (
-            <>
-              <Overlay />
-              <CinematicBar />
-              <QuickDeck />
-              <LeadCaptureModal />
-              <FeaturePopupHUD />
-              <StoryHUD />
-              <InvestorGame />
-            </>
-          )}
-          <LandingOverlay />
-          <RoleSelector />
-          <Leaderboard />
-          <AccountPanel />
-          <ShareRankCard />
-        </>
-      )}
+      <div className="relative z-10 flex flex-col items-center">
+        <StickyHeader onOpenDataRoom={openDataRoom} />
+        <Hero onOpenDataRoom={openDataRoom} />
+        <LeadCaptureCard selectedDistrict={selectedDistrict} onOpenDataRoom={openDataRoom} />
+        <DistrictSelector selectedDistrict={selectedDistrict} onSelectDistrict={setSelectedDistrict} />
+        <Footer />
+      </div>
 
-      {isWebGLError && (
-        <div className="absolute inset-0 z-40">
-          <PitchDeckFallback />
-        </div>
-      )}
+      <InvestorDataRoomModal isOpen={isDataRoomOpen} onClose={() => setIsDataRoomOpen(false)} />
     </main>
   );
 }

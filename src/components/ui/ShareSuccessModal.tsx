@@ -1,34 +1,66 @@
 'use client';
 
-import { useState } from 'react';
-import { Award, Check, Copy, Gem, MessageCircle, Share2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Copy, Gem, MessageCircle, Share2, X } from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
-import { getAllRoleSummaries, ROLE_LABELS } from '@/lib/leaderboard';
+import type { LeadRole } from '@/types';
+
+type WaitlistRole = Exclude<LeadRole, 'investor'>;
+
+const ROLE_LABELS: Record<WaitlistRole, string> = {
+  customer: 'Customer',
+  merchant: 'Merchant',
+  driver: 'Driver',
+};
+
+const INVITE_POLL_INTERVAL_MS = 15_000;
+
+interface ShareSuccessModalProps {
+  role: WaitlistRole;
+  isOpen: boolean;
+  onClose: () => void;
+}
 
 /**
- * "Share Rank" modal — a pre-styled dark-cyan shareable card previewing the
- * player's current rank for one role, plus a `?ref=<hash of their email>`
- * referral link (see useUserProfileStore.hashEmailToReferralCode) that
- * awards a one-time +10% score boost the first time it's copied or shared
- * (useUserProfileStore.applyShareBoost). Opened via
- * useUserProfileStore.openShareCard from AccountPanel.tsx and each
- * game-over screen (DriverGame/CustomerGame/InvestorGame).
+ * Post-submit share card for Customer/Merchant/Driver — never shown to
+ * Investor leads (those are confidential, no public sharing per the brief).
+ * Each share action jumps the visitor's waitlist position by 10 (capped
+ * server-side in useUserProfileStore); an interval poll against
+ * /api/waitlist's best-effort invite counter credits +5 per successful
+ * invite once it reports new signups against this visitor's referral code.
  */
-export function ShareRankCard() {
-  const isOpen = useUserProfileStore((state) => state.isShareCardOpen);
-  const role = useUserProfileStore((state) => state.shareCardRole);
-  const closeShareCard = useUserProfileStore((state) => state.closeShareCard);
-  const email = useUserProfileStore((state) => state.email);
+export function ShareSuccessModal({ role, isOpen, onClose }: ShareSuccessModalProps) {
   const referralCode = useUserProfileStore((state) => state.referralCode);
-  const hasSharedForBoost = useUserProfileStore((state) => state.hasSharedForBoost);
+  const entry = useUserProfileStore((state) => state.waitlist[role]);
   const applyShareBoost = useUserProfileStore((state) => state.applyShareBoost);
+  const applyInviteCredit = useUserProfileStore((state) => state.applyInviteCredit);
 
   const [copied, setCopied] = useState(false);
 
-  if (!isOpen || !role) return null;
+  useEffect(() => {
+    if (!isOpen || !referralCode) return;
 
-  const summary = getAllRoleSummaries(email)[role];
-  const rankLabel = summary.rank ? `#${summary.rank}` : 'Unranked';
+    const pollInvites = async () => {
+      try {
+        const response = await fetch(`/api/waitlist?code=${encodeURIComponent(referralCode)}`);
+        const data = await response.json();
+        const serverTotal = typeof data.invitesForCode === 'number' ? data.invitesForCode : 0;
+        const alreadyCredited = entry?.inviteCredits ?? 0;
+        if (serverTotal > alreadyCredited) applyInviteCredit(role, serverTotal - alreadyCredited);
+      } catch {
+        // Best-effort only — never block the share UI on a network failure.
+      }
+    };
+
+    pollInvites();
+    const interval = setInterval(pollInvites, INVITE_POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, referralCode, role]);
+
+  if (!isOpen || !entry) return null;
+
+  const positionLabel = `#${entry.waitlistPosition}`;
   const referralLink =
     typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname}?ref=${referralCode}` : '';
 
@@ -41,20 +73,19 @@ export function ShareRankCard() {
     } catch {
       // Clipboard API can be unavailable/denied — the link is still visible in the input below.
     }
-    applyShareBoost();
+    applyShareBoost(role);
   };
 
   const handleNativeShare = async () => {
     if (!referralLink) return;
-    const shareData = {
-      title: 'ReSmart AI — Dubai Grand Launching',
-      text: `I am ranked ${rankLabel} in ReSmart AI Dubai Launch!`,
-      url: referralLink,
-    };
     try {
       if (navigator.share) {
-        await navigator.share(shareData);
-        applyShareBoost();
+        await navigator.share({
+          title: 'ReSmart AI — Dubai Grand Launching',
+          text: `I'm ${positionLabel} in line for ReSmart AI's Dubai launch!`,
+          url: referralLink,
+        });
+        applyShareBoost(role);
         return;
       }
     } catch {
@@ -65,26 +96,21 @@ export function ShareRankCard() {
 
   const whatsappShareUrl = referralLink
     ? `https://wa.me/?text=${encodeURIComponent(
-        `I am ranked ${rankLabel} in ReSmart AI Dubai Launch! Join me: ${referralLink}`,
+        `I'm ${positionLabel} in line for ReSmart AI's Dubai launch! Join me: ${referralLink}`,
       )}`
     : '';
 
-  const handleWhatsAppShare = () => {
-    applyShareBoost();
-  };
-
   return (
-    <div className="pointer-events-auto absolute inset-0 z-[70] flex items-center justify-center bg-asphalt/80 backdrop-blur-sm">
-      <div className="animate-modal-in relative w-full max-w-sm rounded-3xl border border-white/15 bg-asphalt p-5 shadow-2xl shadow-cyan-500/20">
+    <div className="pointer-events-auto hud-scrim absolute inset-0 z-50 flex items-center justify-center p-4">
+      <div className="animate-modal-in glass-panel relative w-full max-w-sm rounded-3xl p-5">
         <button
-          onClick={closeShareCard}
+          onClick={onClose}
           aria-label="Close share card"
           className="absolute right-2 top-2 flex min-h-[44px] min-w-[44px] items-center justify-center text-neutral-400 transition hover:text-white"
         >
           <X size={18} />
         </button>
 
-        {/* The shareable "card" preview itself — dark-cyan, screenshot/social-ready. */}
         <div className="overflow-hidden rounded-2xl border border-cyan-400/30 bg-gradient-to-br from-[#03141c] via-[#04222c] to-[#031017] p-6 shadow-[0_0_40px_rgba(34,211,238,0.15)]">
           <div className="flex items-center justify-center gap-2 text-cyan-300">
             <Gem size={16} />
@@ -92,17 +118,17 @@ export function ShareRankCard() {
             <Gem size={16} />
           </div>
           <p className="mt-4 text-center text-lg font-semibold leading-snug text-white">
-            I am ranked <span className="text-cyan-300">{rankLabel}</span> in ReSmart AI Dubai Launch!
+            You&apos;re <span className="text-cyan-300">{positionLabel}</span> in line for the Dubai launch!
           </p>
           <div className="mx-auto mt-3 flex w-fit items-center gap-1.5 rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-medium text-cyan-200">
-            <Award size={12} /> {ROLE_LABELS[role]} · {summary.score.toLocaleString()} pts
+            {ROLE_LABELS[role]}
           </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-center text-xs text-emerald-300">
-          {hasSharedForBoost
-            ? 'Share boost already claimed — thanks for spreading the word!'
-            : 'Copy or share your link for an instant +10% score boost.'}
+          {entry.shareBoostCount >= 3
+            ? 'Max share boost reached — invite friends for more.'
+            : `Share for an instant +10 jump (${3 - entry.shareBoostCount} left) — every invite adds +5 more.`}
         </div>
 
         <div className="mt-4">
@@ -123,15 +149,15 @@ export function ShareRankCard() {
           </div>
           <button
             onClick={handleNativeShare}
-            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-500 to-purple-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+            className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90"
           >
-            <Share2 size={14} /> Share Rank
+            <Share2 size={14} /> Share My Spot
           </button>
           <a
             href={whatsappShareUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={handleWhatsAppShare}
+            onClick={() => applyShareBoost(role)}
             aria-disabled={!whatsappShareUrl}
             className="mt-2 flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-300 transition hover:bg-emerald-500/20"
           >

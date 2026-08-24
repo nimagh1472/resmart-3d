@@ -1,6 +1,5 @@
-export type PresentationMode = 'INTERACTIVE' | 'GUIDED' | 'CINEMATIC';
-
-export type RoleType = 'CUSTOMER' | 'AGENT' | null;
+/** The four lead-capture personas the landing page targets. Used as the single role concept everywhere (there is no separate "gameplay role" anymore). */
+export type LeadRole = 'customer' | 'merchant' | 'driver' | 'investor';
 
 export interface PitchMetric {
   value: number | string;
@@ -9,78 +8,57 @@ export interface PitchMetric {
   assumption: string;
 }
 
-export type StationId =
-  | 'CUSTOMER_STORE'
-  | 'CUSTOMER_EXPRESS'
-  | 'AGENT_DISPATCH'
-  | 'AGENT_VERIFY'
-  | 'AGENT_DROPOFF'
-  | 'TRACTION_ASK';
-
-export interface InvestorPitchLine {
-  text: string;
-  source: string;
-  assumption: string;
-}
-
-export interface StationDefinition {
-  id: StationId;
-  title: string;
-  description: string;
-  position: [number, number, number];
-  visibleTo: Array<Exclude<RoleType, null>>;
-  metricKeys: string[];
-  investorPitchLine: InvestorPitchLine;
-  /** If set, this station only rewards once the referenced station's role-specific gate has been satisfied. */
-  requiresStation?: StationId;
-}
-
-export interface CashbackPickup {
-  id: string;
-  position: [number, number, number];
-  amount: number;
-}
-
-export type BusinessFeatureKey =
-  | 'AI_COMPARISON'
-  | 'CASHBACK_REWARDS'
-  | 'DELIVERY_GUARANTEE'
-  | 'AGENT_EARNINGS'
-  | 'SECRET_VOUCHER';
-
-export interface BusinessFeature {
-  key: BusinessFeatureKey;
-  title: string;
-  description: string;
-}
-
 export interface RevenueStream {
   key: string;
   label: string;
   description: string;
 }
 
-export type AgentOrderStage = 'IDLE' | 'DISPATCHED' | 'VERIFIED';
+export type DistrictId = 'downtown' | 'business-bay' | 'szr' | 'difc';
 
-export type StoryRoleKey = 'CUSTOMER' | 'AGENT';
-
-export interface StoryChapterDef {
-  title: string;
-  guideDialogue: string;
-  objective: string;
+export interface DistrictMetrics {
+  id: DistrictId;
+  label: string;
+  merchantDensity: number;
+  aiRouteEfficiencyPct: number;
+  regionalGmvAed: number;
 }
+
+export type VehicleType = 'motorcycle' | 'ev' | 'sedan';
+
+export type TicketSizeBand = '100k-250k' | '250k-500k' | '500k-1m' | '1m-plus';
+
+export interface CustomerLeadPayload {
+  role: 'customer';
+  email: string;
+}
+
+export interface MerchantLeadPayload {
+  role: 'merchant';
+  businessEmail: string;
+  district: DistrictId;
+}
+
+export interface DriverLeadPayload {
+  role: 'driver';
+  email: string;
+  vehicleType: VehicleType;
+  licenseConfirmed: boolean;
+}
+
+export interface InvestorLeadPayload {
+  role: 'investor';
+  name: string;
+  fundOrEntity: string;
+  ticketSizeBand: TicketSizeBand;
+}
+
+export type LeadPayload = CustomerLeadPayload | MerchantLeadPayload | DriverLeadPayload | InvestorLeadPayload;
 
 export interface VoucherReward {
   voucherCount: number;
   voucherValue: number;
   code: string | null;
-}
-
-export interface FeaturePopup {
-  id: number;
-  kind: 'FEATURE' | 'REWARD';
-  title: string;
-  description?: string;
 }
 
 export interface WorldBounds {
@@ -90,35 +68,17 @@ export interface WorldBounds {
   maxZ: number;
 }
 
-export interface VehicleControlsState {
-  forward: number;
-  turn: number;
-  boost: boolean;
+/** Inputs for the Investor Data Room's interactive ROI calculator (lifted from the old InvestorGame minigame's model). */
+export interface InvestorRoiInputs {
+  dailyTargetOrders: number;
+  staffOpsCostAed: number;
+  fleetSize: number;
+  efficiencyPct: number;
 }
 
-export interface WalletTransaction {
-  id: number;
-  label: string;
-  amount: number;
-  timestamp: number;
-}
-
-/** Leaderboard/onboarding persona — distinct from RoleType (which only
- * distinguishes CUSTOMER/AGENT gameplay), since Investor has no gameplay
- * role of its own (it's a presentationMode, CINEMATIC) but still needs a
- * leaderboard bucket. */
-export type ProfileRole = 'driver' | 'customer' | 'investor';
-
-export interface UserProfile {
-  email: string;
-  role: ProfileRole;
-  score: number;
-  rank: number;
-}
-
-export interface LeaderboardEntry {
-  email: string;
-  role: ProfileRole;
-  score: number;
-  updatedAt: string;
+export interface InvestorRoiResult {
+  ordersFulfilled: number;
+  netProfitAed: number;
+  netMarginPct: number;
+  roiPct: number;
 }

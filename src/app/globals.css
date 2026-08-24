@@ -2,22 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Dubai Ultra-Luxury Cyber-Glass — fixed dark brand theme (not
+ * system-theme-aware: this is a pitch experience, not a themable app).
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0b0f12;
+  --foreground: #e5e7eb;
 }
 
 html,
 body {
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
@@ -29,42 +25,48 @@ body {
   }
 }
 
-/* Drives CinematicBar.tsx's per-zone progress segments: a fresh element
-   (via a React `key` change) mounts with this animation and fills over
-   exactly CINEMATIC_DWELL_SECONDS, matching the camera's actual dwell time. */
-@keyframes cinematic-progress-fill {
-  from {
-    width: 0%;
+/*
+ * Shared glass-chrome primitives — every HUD panel/pill/scrim in the app
+ * should build on one of these three instead of re-typing its own
+ * border/blur/shadow combo, so the "translucent dark cyber-glass with a thin
+ * glowing cyan border" look stays consistent across ~20 components.
+ */
+@layer components {
+  .glass-panel {
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    background-color: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 25px 50px -12px rgba(0, 229, 255, 0.1);
   }
-  to {
-    width: 100%;
+
+  .glass-pill {
+    border-radius: 9999px;
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    background-color: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 25px 50px -12px rgba(0, 229, 255, 0.1);
+  }
+
+  .hud-scrim {
+    background-color: rgba(11, 15, 18, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
   }
 }
 
-/* Drives FeaturePopupHUD.tsx's business-feature/reward pop-ups: an energetic
-   drop-and-settle entrance each time a fresh popup (keyed by its id) mounts. */
-@keyframes feature-pop {
-  0% {
-    opacity: 0;
-    transform: translateY(-16px) scale(0.92);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(2px) scale(1.03);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
+/*
+ * App-wide z-index scale — every fixed/absolute overlay should use one of
+ * these tiers rather than an ad-hoc value, so stacking order stays legible:
+ *   z-10  fixed ambient 3D backdrop  AmbientScene (see app/page.tsx's -z-10 wrapper)
+ *   z-30  sticky page chrome         StickyHeader
+ *   z-50  stacking modal             ShareSuccessModal, InvestorDataRoomModal
+ */
 
-.animate-feature-pop {
-  animation: feature-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-}
-
-/* Shared "opening" transition for every modal/panel (AccountPanel, Leaderboard,
-   QuickDeck, LeadCaptureModal, ShareRankCard, RoleSelector) — a quick
-   fade+scale-in on the panel itself so modals never just hard-pop into view. */
+/* Shared "opening" transition for every modal/panel (ShareSuccessModal,
+   InvestorDataRoomModal) — a quick fade+scale-in on the panel itself so
+   modals never just hard-pop into view. */
 @keyframes modal-in {
   from {
     opacity: 0;

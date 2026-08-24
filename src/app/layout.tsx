@@ -14,8 +14,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ReSmart AI — Interactive Pitch",
-  description: "An interactive 3D pitch experience for ReSmart AI.",
+  title: "ReSmart AI — Dubai's AI Commerce & Autonomous Logistics Network",
+  description:
+    "Join the ReSmart AI pre-launch waitlist as a Customer, Merchant, or Driver, or request access to the Investor Data Room.",
 };
 
 export default function RootLayout({

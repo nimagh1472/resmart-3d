@@ -1,36 +1,38 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { getRankForEmail, submitScoreToServer, upsertLeaderboardEntry } from '@/lib/leaderboard';
-import type { ProfileRole } from '@/types';
+import { URGENCY_SPOTS } from '@/lib/pitchData';
+import type { LeadRole } from '@/types';
+
+/** Only Customer/Merchant/Driver have a waitlist position + share mechanic — Investor is a confidential request, never gamified/shared. */
+type WaitlistRole = Exclude<LeadRole, 'investor'>;
+
+const MAX_SHARE_BOOSTS_PER_ROLE = 3;
+const SHARE_BOOST_JUMP = 10;
+const INVITE_CREDIT_JUMP = 5;
+
+interface WaitlistEntry {
+  waitlistPosition: number;
+  shareBoostCount: number;
+  inviteCredits: number;
+}
 
 interface UserProfileState {
   email: string;
-  role: ProfileRole | null;
-  score: number;
-  rank: number;
+  submittedRoles: LeadRole[];
+  waitlist: Partial<Record<WaitlistRole, WaitlistEntry>>;
   referralCode: string;
-  isLeaderboardOpen: boolean;
-  isAccountPanelOpen: boolean;
-  isShareCardOpen: boolean;
-  shareCardRole: ProfileRole | null;
-  hasSharedForBoost: boolean;
 
-  setProfile: (email: string, role: ProfileRole) => void;
-  addScore: (points: number) => void;
-  openLeaderboard: () => void;
-  closeLeaderboard: () => void;
-  openAccountPanel: () => void;
-  closeAccountPanel: () => void;
-  openShareCard: (role: ProfileRole) => void;
-  closeShareCard: () => void;
-  applyShareBoost: () => void;
+  /** Records a lead submission for a role (idempotent for the waitlist roles — resubmitting doesn't reset an existing position). */
+  recordSubmission: (role: LeadRole, email: string) => void;
+  hasSubmitted: (role: LeadRole) => boolean;
+  applyShareBoost: (role: WaitlistRole) => void;
+  applyInviteCredit: (role: WaitlistRole, newInvites: number) => void;
 }
 
 /**
- * Short, non-identifying `?ref=` code shared in referral links — a
- * deterministic (not random) hash of the email, so the same visitor always
- * gets the same code across devices/sessions without the raw address ever
- * appearing in a shared URL.
+ * Short, non-identifying referral code — a deterministic (not random) hash
+ * of the email, so the same visitor always gets the same code across
+ * devices/sessions without the raw address ever appearing in a shared URL.
  */
 function hashEmailToReferralCode(email: string): string {
   let hash = 0;
@@ -40,80 +42,79 @@ function hashEmailToReferralCode(email: string): string {
   return hash.toString(36).toUpperCase();
 }
 
-/** Recomputes rank + syncs the shared leaderboard (localStorage + best-effort API) for the current profile. */
-function syncLeaderboard(email: string, role: ProfileRole, score: number): number {
-  const timestamp = new Date().toISOString();
-  upsertLeaderboardEntry({ email, role, score, updatedAt: timestamp });
-  const rank = getRankForEmail(role, email) ?? 0;
-  submitScoreToServer({ email, role, score, rank, timestamp });
-  return rank;
+/** Seeds a starting position somewhere within the still-open pool, so every visitor's "line" feels distinct rather than everyone starting at the same number. */
+function seedWaitlistPosition(role: WaitlistRole): number {
+  const pool = URGENCY_SPOTS[role];
+  const openSlots = Math.max(1, pool.totalSpots - pool.baseClaimed);
+  return 1 + Math.floor(Math.random() * openSlots);
 }
 
 /**
- * Unified user-profile store: the email + role captured at onboarding
- * (RoleSelector.tsx), and the score/rank driving the Top-50 Leaderboard.
- * Deliberately independent of useRoleStore's earnings/wallet figures (those
- * price the pitch's fictional business; score is a pure engagement/ranking
- * number). Persisted to localStorage so a returning visitor in the same
- * browser resumes their session instead of re-onboarding.
+ * Landing-page identity store: the email captured at lead submission plus a
+ * per-role waitlist position that improves via WhatsApp/link sharing (+10,
+ * capped) and successful invites (+5 each, reported back by the lightweight
+ * server-side counter in app/api/waitlist/route.ts). Persisted to
+ * localStorage so a returning visitor resumes their position instead of
+ * losing progress.
  */
 export const useUserProfileStore = create<UserProfileState>()(
   persist(
     (set, get) => ({
       email: '',
-      role: null,
-      score: 0,
-      rank: 0,
+      submittedRoles: [],
+      waitlist: {},
       referralCode: '',
-      isLeaderboardOpen: false,
-      isAccountPanelOpen: false,
-      isShareCardOpen: false,
-      shareCardRole: null,
-      hasSharedForBoost: false,
 
-      setProfile: (email, role) => {
-        set((state) => ({ email, role, referralCode: state.referralCode || hashEmailToReferralCode(email) }));
-        const rank = syncLeaderboard(email, role, get().score);
-        set({ rank });
+      recordSubmission: (role, email) => {
+        set((state) => ({
+          email,
+          referralCode: state.referralCode || hashEmailToReferralCode(email),
+          submittedRoles: state.submittedRoles.includes(role) ? state.submittedRoles : [...state.submittedRoles, role],
+        }));
+
+        if (role === 'investor') return;
+        if (get().waitlist[role]) return; // already has a position — don't reset it on resubmit
+        set((state) => ({
+          waitlist: {
+            ...state.waitlist,
+            [role]: { waitlistPosition: seedWaitlistPosition(role), shareBoostCount: 0, inviteCredits: 0 },
+          },
+        }));
       },
 
-      addScore: (points) => {
-        const { email, role } = get();
-        const score = get().score + points;
-        set({ score });
-        if (!email || !role) return;
-        const rank = syncLeaderboard(email, role, score);
-        set({ rank });
+      hasSubmitted: (role) => get().submittedRoles.includes(role),
+
+      applyShareBoost: (role) => {
+        const entry = get().waitlist[role];
+        if (!entry || entry.shareBoostCount >= MAX_SHARE_BOOSTS_PER_ROLE) return;
+        set((state) => ({
+          waitlist: {
+            ...state.waitlist,
+            [role]: {
+              ...entry,
+              shareBoostCount: entry.shareBoostCount + 1,
+              waitlistPosition: Math.max(1, entry.waitlistPosition - SHARE_BOOST_JUMP),
+            },
+          },
+        }));
       },
 
-      openLeaderboard: () => set({ isLeaderboardOpen: true }),
-      closeLeaderboard: () => set({ isLeaderboardOpen: false }),
-      openAccountPanel: () => set({ isAccountPanelOpen: true }),
-      closeAccountPanel: () => set({ isAccountPanelOpen: false }),
-
-      openShareCard: (role) => set({ isShareCardOpen: true, shareCardRole: role }),
-      closeShareCard: () => set({ isShareCardOpen: false }),
-
-      // One-time +10% score boost for copying/sharing the referral link (see
-      // ShareRankCard.tsx) — guarded by hasSharedForBoost (persisted below)
-      // so re-sharing repeatedly can't be farmed for repeat boosts.
-      applyShareBoost: () => {
-        if (get().hasSharedForBoost) return;
-        set({ hasSharedForBoost: true });
-        const boost = Math.round(get().score * 0.1);
-        if (boost > 0) get().addScore(boost);
+      applyInviteCredit: (role, newInvites) => {
+        if (newInvites <= 0) return;
+        const entry = get().waitlist[role];
+        if (!entry) return;
+        set((state) => ({
+          waitlist: {
+            ...state.waitlist,
+            [role]: {
+              ...entry,
+              inviteCredits: entry.inviteCredits + newInvites,
+              waitlistPosition: Math.max(1, entry.waitlistPosition - newInvites * INVITE_CREDIT_JUMP),
+            },
+          },
+        }));
       },
     }),
-    {
-      name: 'resmart_user_profile',
-      partialize: (state) => ({
-        email: state.email,
-        role: state.role,
-        score: state.score,
-        rank: state.rank,
-        referralCode: state.referralCode,
-        hasSharedForBoost: state.hasSharedForBoost,
-      }),
-    },
+    { name: 'resmart_user_profile' },
   ),
 );

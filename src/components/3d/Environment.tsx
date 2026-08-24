@@ -1,32 +1,21 @@
 'use client';
 
-import { memo, useMemo, useRef } from 'react';
+import { memo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { EffectComposer, SSAO, Bloom, Vignette } from '@react-three/postprocessing';
-import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Sky } from '@react-three/drei';
-import { Color, Vector3, type PlaneGeometry } from 'three';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import { Environment as EnvironmentHDRI, MeshReflectorMaterial, Stars } from '@react-three/drei';
+import { type PlaneGeometry } from 'three';
 import { WORLD_BOUNDS } from '@/lib/pitchData';
-import { useRoleStore } from '@/hooks/useRoleStore';
 
-/** Low-core-count devices (old phones, budget laptops) get the same "skip SSAO" treatment as mobile, even on desktop Chrome. */
-function detectLowEndGpu(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return typeof navigator.hardwareConcurrency === 'number' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
-}
-
-const SSAO_SHADOW_COLOR = new Color('#2a1c14');
-
-// Cinematic dusk/golden-hour rig: a single low-elevation sun direction drives
-// drei's <Sky> (physical scattering sky dome), the "sun" directional light,
-// and the fog tint below, so the sky, sunlight color, and haze all agree on
-// where "golden hour" is coming from. Kept as a plain tuple (not a shared
-// Vector3 instance) for the directionalLight's `position` prop — R3F assigns
-// array props via light.position.set(...), whereas reusing one Vector3
-// object across multiple JSX props would alias light.position itself.
+// Moody Dubai-night rig: a single low-elevation "moon" direction drives the
+// directional light and the fog tint below, so moonlight and haze agree on
+// where night is coming from. Kept as a plain tuple (not a shared Vector3
+// instance) for the directionalLight's `position` prop — R3F assigns array
+// props via light.position.set(...), whereas reusing one Vector3 object
+// across multiple JSX props would alias light.position itself.
 const SUN_DIRECTION: [number, number, number] = [70, 16, -55];
-const SUN_VECTOR = new Vector3(...SUN_DIRECTION);
-const SKY_COLOR = '#F3B27A';
-const FOG_COLOR = '#E8A46B';
+const SKY_COLOR = '#0B1622';
+const FOG_COLOR = '#0B1622';
 const FOG_NEAR = 50;
 const FOG_FAR = 260;
 
@@ -70,66 +59,45 @@ interface EnvironmentProps {
 }
 
 /**
- * Cinematic dusk/golden-hour Downtown Dubai lighting rig: a physically
- * scattered <Sky> dome standing in for volumetric haze along the horizon,
- * warm low-angle "sun" directional light casting dynamic shadows, amber fog
- * matching the sky's horizon tone, and a rippling coastal water plane
- * standing in for Dubai Creek/the waterfront beyond the drivable area.
- * Postprocessing (SSAO contact shadows + bloom on emissive/glass accents)
- * only runs on desktop — both are relatively expensive per-pixel passes.
+ * Moody Dubai-night Downtown lighting rig: a deep-navy sky with a cheap
+ * starfield standing in for volumetric haze along the horizon, a cool
+ * low-angle "moonlight" directional light, indigo fog matching the sky's
+ * tone, and a rippling coastal water plane standing in for Dubai Creek/the
+ * waterfront beyond the drivable area. A single lightweight Bloom pass (no
+ * SSAO/Vignette — this is a pure background now, not a gameplay surface
+ * needing contact shadows) only runs on desktop.
  */
 export const Environment = memo(function Environment({ isMobile }: EnvironmentProps) {
-  const isLowEnd = useMemo(() => isMobile || detectLowEndGpu(), [isMobile]);
-
   return (
     <>
       <color attach="background" args={[SKY_COLOR]} />
 
-      <Sky
-        sunPosition={SUN_VECTOR}
-        turbidity={9}
-        rayleigh={2.2}
-        mieCoefficient={0.012}
-        mieDirectionalG={0.9}
-      />
+      {/* Moody night skyline: a cheap single-draw starfield stands in for
+          drei's <Sky> (a daytime scattering model, wrong tool once the sun is
+          gone) — desktop-only, matching the SSAO/Bloom gating below. */}
+      {!isMobile && <Stars radius={220} depth={60} count={1400} factor={3} saturation={0} fade speed={0.4} />}
 
-      <EnvironmentHDRI preset="sunset" background={false} environmentIntensity={0.5} />
-      <hemisphereLight args={['#FFD8A8', '#8D7B68', 0.55]} />
+      <EnvironmentHDRI preset="night" background={false} environmentIntensity={0.4} />
+      <hemisphereLight args={['#3B4B6B', '#05070A', 0.35]} />
       {/* Flat ambient fill — Canvas-level shadows={false} (Experience.tsx) drops the
-          real-time shadow map pipeline entirely, so this (plus the single sun light
-          below) carries scene fill instead of relying on shadow-side bounce light. */}
-      <ambientLight intensity={1.5} />
+          real-time shadow map pipeline entirely, so this (plus the single moon light
+          below) carries scene fill instead of relying on shadow-side bounce light.
+          Kept bright enough to stay legible/drivable at night, not a literal blackout. */}
+      <ambientLight intensity={0.85} color="#AFD8FF" />
 
-      {/* Single static "sun" directional light, no shadow map — see Experience.tsx's
+      {/* Single static "moon" directional light, no shadow map — see Experience.tsx's
           Canvas shadows={false}. */}
-      <directionalLight position={SUN_DIRECTION} intensity={1.2} color="#FFB066" />
+      <directionalLight position={SUN_DIRECTION} intensity={0.5} color="#AFD8FF" />
 
       <fog attach="fog" args={[FOG_COLOR, FOG_NEAR, FOG_FAR]} />
 
       <CoastalWater isMobile={isMobile} />
 
-      {!isMobile &&
-        (() => {
-          const effects = [
-            !isLowEnd && (
-              <SSAO
-                key="ssao"
-                radius={0.3}
-                intensity={20}
-                luminanceInfluence={0.4}
-                color={SSAO_SHADOW_COLOR}
-                worldDistanceThreshold={20}
-                worldDistanceFalloff={5}
-                worldProximityThreshold={1.5}
-                worldProximityFalloff={0.5}
-              />
-            ),
-            <Bloom key="bloom" luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={0.55} mipmapBlur />,
-            <Vignette key="vignette" darkness={0.65} />,
-          ].filter((effect): effect is JSX.Element => Boolean(effect));
-
-          return <EffectComposer multisampling={0}>{effects}</EffectComposer>;
-        })()}
+      {!isMobile && (
+        <EffectComposer multisampling={0}>
+          <Bloom luminanceThreshold={0.6} luminanceSmoothing={0.9} intensity={0.55} mipmapBlur />
+        </EffectComposer>
+      )}
     </>
   );
 });
@@ -146,13 +114,9 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
   const geometryRef = useRef<PlaneGeometry>(null);
   const basePositions = useRef<Float32Array | null>(null);
   const segments = isMobile ? 16 : 56;
-  const isOverlayOpen = useRoleStore((state) => state.isLeadModalOpen || state.isQuickDeckOpen);
 
   useFrame((state) => {
-    // Skip the per-vertex ripple recompute below while a modal/overlay sits
-    // on top of the canvas — it's a purely decorative background element the
-    // player can't see clearly (or interact with) behind an open overlay.
-    if (isMobile || isOverlayOpen) return;
+    if (isMobile) return;
     const geometry = geometryRef.current;
     if (!geometry) return;
 
@@ -180,7 +144,7 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
     <mesh position={WATER_POSITION} rotation={[-Math.PI / 2, 0, 0]}>
       <planeGeometry ref={geometryRef} args={[WATER_WIDTH, WATER_DEPTH, segments, segments]} />
       {isMobile ? (
-        <meshStandardMaterial color="#0a3b42" roughness={0.15} metalness={0.4} transparent opacity={0.85} />
+        <meshStandardMaterial color="#04141a" roughness={0.15} metalness={0.4} transparent opacity={0.85} />
       ) : (
         <MeshReflectorMaterial
           mirror={0.5}
@@ -189,7 +153,7 @@ function CoastalWater({ isMobile }: { isMobile: boolean }) {
           mixBlur={1}
           mixStrength={40}
           roughness={0.15}
-          color="#0a3b42"
+          color="#04141a"
           metalness={0.4}
         />
       )}
