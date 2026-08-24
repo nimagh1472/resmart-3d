@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { BackgroundVideo } from '@/components/ui/BackgroundVideo';
 import { StickyHeader } from '@/components/ui/StickyHeader';
 import { Hero } from '@/components/ui/Hero';
@@ -15,6 +16,15 @@ import { Footer } from '@/components/ui/Footer';
 import { DEFAULT_DISTRICT_ID } from '@/lib/pitchData';
 import { useIntentPersona } from '@/hooks/useIntentPersona';
 import type { DistrictId, LeadRole } from '@/types';
+
+// Client-only + code-split: the cinematic pre-roll's assets/logic never
+// enter the initial bundle, and (via ssr:false) never render on the server
+// — first paint for a returning/intent-routed visitor is the real site,
+// with no server-rendered flash of the intro to hydrate away.
+const CinematicStage = dynamic(
+  () => import('@/components/cinematic/CinematicStage').then((mod) => mod.CinematicStage),
+  { ssr: false }
+);
 
 /**
  * A 7-scene scroll-driven storyboard (Dubai -> Problem -> AI Layer ->
@@ -36,10 +46,13 @@ export default function Home() {
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictId>(DEFAULT_DISTRICT_ID);
   const [isInvestorAccessOpen, setIsInvestorAccessOpen] = useState(false);
   const [isInvestorSceneInView, setIsInvestorSceneInView] = useState(false);
+  const [isCinematicActive, setIsCinematicActive] = useState(true);
   const openInvestorAccess = () => setIsInvestorAccessOpen(true);
 
   return (
     <>
+      {isCinematicActive && <CinematicStage onComplete={() => setIsCinematicActive(false)} />}
+
       <BackgroundVideo persona={persona} investorSceneInView={isInvestorSceneInView} />
 
       <main className="relative z-20 min-h-screen w-full overflow-x-hidden">
