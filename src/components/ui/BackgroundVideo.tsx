@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 
-const VIDEO_SRC =
-  'https://assets.mixkit.co/videos/preview/mixkit-futuristic-city-with-traffic-at-night-41544-large.mp4';
+const VIDEO_SRC = '/assets/cyber-dubai-loop.mp4';
 
 /**
  * Full-viewport looping background video — replaces the old Three.js ambient
