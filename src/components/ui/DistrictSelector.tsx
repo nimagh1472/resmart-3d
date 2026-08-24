@@ -73,18 +73,27 @@ export function DistrictSelector({ selectedDistrict, onSelectDistrict }: Distric
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <Building2 size={16} className="mx-auto text-cyan-300" />
             <div className="mt-1 text-sm font-semibold text-white">{activeDistrict.merchantDensity}</div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500">Active Merchants</div>
+            <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
+              Merchant Launch Network
+            </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <Gauge size={16} className="mx-auto text-cyan-300" />
             <div className="mt-1 text-sm font-semibold text-white">{activeDistrict.aiRouteEfficiencyPct}%</div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500">AI Route Efficiency</div>
+            <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
+              Benchmark Route Efficiency
+            </div>
           </div>
           <div className="rounded-xl border border-white/10 bg-white/[0.04] p-3">
             <TrendingUp size={16} className="mx-auto text-cyan-300" />
             <div className="mt-1 text-sm font-semibold text-white">{formatGmv(activeDistrict.regionalGmvAed)}</div>
-            <div className="text-[10px] uppercase tracking-wide text-neutral-500">Regional GMV</div>
+            <div className="text-[10px] uppercase leading-tight tracking-wide text-neutral-500">
+              Addressable GMV Model
+            </div>
           </div>
+        </div>
+        <div className="mx-auto mt-2 max-w-xl text-center text-[9px] font-semibold uppercase tracking-widest text-gold/60">
+          Illustrative Target Model — Not Audited Figures
         </div>
 
         <div className="mx-auto mt-6 grid max-w-xl gap-2">

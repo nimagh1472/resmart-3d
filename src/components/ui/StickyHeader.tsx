@@ -40,11 +40,11 @@ export function StickyHeader({ onOpenInvestorAccess }: StickyHeaderProps) {
 
       <button
         onClick={onOpenInvestorAccess}
-        className="flex items-center gap-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-3 py-1.5 text-xs font-semibold text-neutral-950 transition hover:opacity-90"
+        className="flex items-center gap-1.5 rounded-full border border-gold/40 bg-gradient-to-r from-gold/90 to-gold px-3 py-1.5 text-xs font-semibold text-neutral-950 shadow-[0_0_14px_2px_rgba(212,175,55,0.45)] transition hover:opacity-90"
       >
         <Briefcase size={13} />
-        <span className="hidden sm:inline">Investor Access →</span>
-        <span className="sm:hidden">Investor →</span>
+        <span className="hidden sm:inline">INVESTOR ACCESS</span>
+        <span className="sm:hidden">INVESTOR</span>
       </button>
     </header>
   );

@@ -117,3 +117,18 @@ body {
 .network-flow-node {
   animation: network-pulse 6s ease-in-out infinite;
 }
+
+/*
+ * GrowthFlywheel's (components/ui/GrowthFlywheel.tsx) glowing connector
+ * ring — a "marching ants" dash-offset crawl so the loop reads as flowing
+ * even before the SVG <animateMotion> particles complete their first lap.
+ */
+@keyframes flywheel-flow {
+  to {
+    stroke-dashoffset: -28;
+  }
+}
+
+.flywheel-ring {
+  animation: flywheel-flow 1.4s linear infinite;
+}

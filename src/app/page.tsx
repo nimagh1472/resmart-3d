@@ -7,6 +7,8 @@ import { Hero } from '@/components/ui/Hero';
 import { StoryCards } from '@/components/ui/StoryCards';
 import { RegistrationHubs } from '@/components/ui/RegistrationHubs';
 import { NetworkFlowStrip } from '@/components/ui/NetworkFlowStrip';
+import { GrowthFlywheel } from '@/components/ui/GrowthFlywheel';
+import { RevenueEngine } from '@/components/ui/RevenueEngine';
 import { LeadCaptureCard } from '@/components/ui/LeadCaptureCard';
 import { DistrictSelector } from '@/components/ui/DistrictSelector';
 import { HowItWorksCards } from '@/components/ui/HowItWorksCards';
@@ -20,8 +22,9 @@ import type { DistrictId, LeadRole } from '@/types';
  * Single continuous landing page. A fixed, full-viewport looping background
  * video (see components/ui/BackgroundVideo.tsx) sits behind the actual
  * content (header, hero, storytelling cards, registration hubs,
- * network-pulse strip, lead-capture card, district selector, how-it-works
- * cards, footer). A single shared `persona` state (seeded by
+ * network-pulse strip, growth flywheel loop, revenue engine, lead-capture
+ * card, district selector, how-it-works cards, footer). A single shared
+ * `persona` state (seeded by
  * useIntentPersona's ?ref=/?inv= dynamic intent routing) drives Hero's CTA +
  * persona switcher, RegistrationHubs, and LeadCaptureCard's active tab
  * together; Investor Access is a hard-gated modal reachable from the header
@@ -45,6 +48,8 @@ export default function Home() {
           <StoryCards />
           <RegistrationHubs onSelectPersona={setPersona} onOpenInvestorAccess={openInvestorAccess} />
           <NetworkFlowStrip />
+          <GrowthFlywheel />
+          <RevenueEngine />
           <LeadCaptureCard persona={persona} onSelectPersona={setPersona} selectedDistrict={selectedDistrict} />
           <DistrictSelector selectedDistrict={selectedDistrict} onSelectDistrict={setSelectedDistrict} />
           <HowItWorksCards />

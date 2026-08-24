@@ -1,10 +1,21 @@
 'use client';
 
 import { useMemo, useState, type FormEvent } from 'react';
-import { CalendarClock, ChevronDown, FileDown, Layers, ShieldCheck, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  CalendarClock,
+  ChevronDown,
+  FileDown,
+  Globe2,
+  Layers,
+  Network,
+  ShieldCheck,
+  X,
+} from 'lucide-react';
 import { useUserProfileStore } from '@/hooks/useUserProfileStore';
 import {
   DEFAULT_SEED_SCENARIO_INPUTS,
+  MARKET_METRICS,
   METHODOLOGY_NOTE,
   PITCH_DECK_PATH,
   PITCH_METRICS,
@@ -60,12 +71,14 @@ interface InvestorAccessModalProps {
 
 /**
  * The Investor Access fast-lane — a hard-gated single entry point (opened
- * only from StickyHeader's "Investor Access →" button or Hero's CTA/persona
- * switcher when persona === 'investor'). Before submission this renders
- * nothing but a one-line teaser and the qualification form: Name,
- * Fund/Entity, Ticket Size, Work Email/LinkedIn. Only after submitting does
- * it reveal the market/financial metrics, the 5-stream revenue model, the
- * interactive Seed Scenario Model, the deck download, and the meeting link.
+ * only from StickyHeader's "INVESTOR ACCESS" badge or Hero's CTA/persona
+ * switcher when persona === 'investor'). Walks the investment thesis in
+ * order — Problem -> Market Opportunity -> Network Effect -> the
+ * Confidential Data Room Request form (Name, Fund/Entity, Ticket Size, Work
+ * Email/LinkedIn) — with no financial specifics disclosed pre-submission.
+ * Only after submitting does it reveal Monetization (the 5-stream revenue
+ * model), Seed Raise Details (market/financial metrics + the interactive
+ * Seed Scenario Model), the deck download, and the meeting link.
  */
 export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProps) {
   const [inputs, setInputs] = useState<SeedScenarioInputs>(DEFAULT_SEED_SCENARIO_INPUTS);
@@ -136,13 +149,46 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
         {!hasSubmitted ? (
           <>
             <p className="mt-2 text-xs text-neutral-400">
-              Private Seed Access — for qualified VCs &amp; Angels. Submit your details to unlock the confidential
-              investment teaser, the Seed Scenario Model, and the full pitch deck.
+              Private Seed Access — for qualified VCs &amp; Angels. Submit the Confidential Data Room Request below to
+              unlock Monetization, Seed Raise Details, the Seed Scenario Model, and the full pitch deck.
             </p>
+
+            <div className="mt-4 space-y-3">
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-red-300/80">
+                  <AlertTriangle size={13} /> The Problem
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+                  Dubai&apos;s local commerce is fragmented across WhatsApp groups and delivery apps taking 20-30%
+                  commissions — merchants overpay for discovery, drivers idle between disconnected platforms, and
+                  shoppers can&apos;t find what&apos;s nearby in real time.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-cyan-300">
+                  <Globe2 size={13} /> Market Opportunity
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+                  {formatValue(MARKET_METRICS.dubaiTam.value)} UAE/Dubai TAM in AI-driven local commerce &amp;
+                  logistics. Full TAM/SAM/ARR breakdown unlocks in Seed Raise Details below.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-gold">
+                  <Network size={13} /> Network Effect
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-neutral-400">
+                  Every new shopper compounds merchant ROI and delivery density — a self-reinforcing growth flywheel
+                  (see the Growth Flywheel Loop on the page).
+                </p>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="mt-5 space-y-3">
               <div className="text-xs font-semibold uppercase tracking-widest text-neutral-400">
-                Qualification
+                Confidential Data Room Request
               </div>
               <input
                 type="text"
@@ -185,17 +231,34 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
                 disabled={isSubmitting}
                 className="w-full rounded-full bg-gradient-to-r from-cyan-400 to-gold px-4 py-2.5 text-sm font-semibold text-neutral-950 transition hover:opacity-90 disabled:opacity-50"
               >
-                {isSubmitting ? 'Submitting…' : 'Unlock Investment Teaser →'}
+                {isSubmitting ? 'Submitting…' : 'Request Private Data Room Access →'}
               </button>
             </form>
           </>
         ) : (
           <>
             <div className="mt-3 rounded-xl border border-emerald-400/25 bg-emerald-400/10 px-3 py-2 text-center text-xs text-emerald-300">
-              Request received — confidential investment teaser unlocked below.
+              Request received — confidential data room unlocked below.
             </div>
 
-            <ul className="mt-4 space-y-3">
+            <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400">
+              <Layers size={13} />
+              Monetization — 5-Stream Revenue Model
+            </div>
+            <ul className="mt-2 space-y-2">
+              {REVENUE_STREAMS.map((stream) => (
+                <li key={stream.key} className="rounded-lg bg-white/5 px-3 py-2">
+                  <div className="text-xs font-semibold text-white">{stream.label}</div>
+                  <div className="text-[11px] text-neutral-400">{stream.description}</div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-5 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-cyan-300">
+              <Globe2 size={13} />
+              Seed Raise Details
+            </div>
+            <ul className="mt-2 space-y-3">
               {Object.values(PITCH_METRICS).map((metric) => (
                 <li key={metric.label} className="border-b border-white/10 pb-2 last:border-none">
                   <div className="flex items-baseline justify-between gap-2">
@@ -216,19 +279,6 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
               <ChevronDown size={12} className={isMethodologyOpen ? 'rotate-180 transition' : 'transition'} />
             </button>
             {isMethodologyOpen && <p className="mt-1 text-[11px] leading-relaxed text-neutral-500">{METHODOLOGY_NOTE}</p>}
-
-            <div className="mt-4 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-neutral-400">
-              <Layers size={13} />
-              5-Stream Revenue Model
-            </div>
-            <ul className="mt-2 space-y-2">
-              {REVENUE_STREAMS.map((stream) => (
-                <li key={stream.key} className="rounded-lg bg-white/5 px-3 py-2">
-                  <div className="text-xs font-semibold text-white">{stream.label}</div>
-                  <div className="text-[11px] text-neutral-400">{stream.description}</div>
-                </li>
-              ))}
-            </ul>
 
             <div className="mt-5 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
               <div className="text-xs font-semibold uppercase tracking-widest text-cyan-300">Seed Scenario Model</div>

@@ -5,8 +5,12 @@ import { LAUNCH_TIMESTAMP, padCountdownValue, useCountdown } from '@/hooks/useCo
 import { PersonaSwitcher } from '@/components/ui/PersonaSwitcher';
 import type { LeadRole } from '@/types';
 
-const JOIN_NETWORK_CTA = 'JOIN THE FOUNDING NETWORK';
-const INVESTOR_CTA = 'INVESTOR ACCESS';
+const PERSONA_CONTENT: Record<LeadRole, { headline: string; cta: string }> = {
+  shopper: { headline: 'Find local deals in seconds', cta: 'CLAIM AED 500 FOUNDING VOUCHER' },
+  merchant: { headline: 'Turn local demand into commission-free sales', cta: 'APPLY AS FOUNDING MERCHANT' },
+  driver: { headline: 'Zero-commission AI route dispatching', cta: 'JOIN FOUNDING DRIVER NETWORK' },
+  investor: { headline: 'The AI commerce & logistics infrastructure for Dubai', cta: 'REQUEST PRIVATE DATA ROOM ACCESS' },
+};
 
 function scrollToLeadCapture() {
   document.getElementById('lead-capture')?.scrollIntoView({ behavior: 'smooth' });
@@ -19,16 +23,16 @@ interface HeroProps {
 }
 
 /**
- * The top-of-page "3-second clarity" wedge: headline, launch countdown, the
- * unified primary CTA, and the persona switcher that drives both the CTA's
- * label/behavior and the lead-capture form's active tab (owned by
- * app/page.tsx's shared `persona` state). The old 3-up "how it works"
- * explainer has moved to its own section (HowItWorksCards.tsx) to keep this
- * decluttered.
+ * The top-of-page "3-second clarity" wedge: a persona-specific headline + CTA
+ * (PERSONA_CONTENT above) driven by the persona switcher, plus the launch
+ * countdown (owned by app/page.tsx's shared `persona` state). The old 3-up
+ * "how it works" explainer has moved to its own section (HowItWorksCards.tsx)
+ * to keep this decluttered.
  */
 export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroProps) {
   const countdown = useCountdown(LAUNCH_TIMESTAMP);
   const isInvestor = persona === 'investor';
+  const content = PERSONA_CONTENT[persona];
 
   const handlePrimaryCtaClick = () => {
     if (isInvestor) onOpenInvestorAccess();
@@ -51,7 +55,7 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
         </div>
 
         <h1 className="mt-4 text-center text-2xl font-semibold leading-tight text-white sm:text-4xl">
-          Dubai&apos;s AI Commerce &amp; Logistics Network
+          {content.headline}
         </h1>
         <p className="mx-auto mt-2 max-w-xl text-center text-base font-medium text-cyan-200 sm:text-lg">
           Search Smarter. Buy Locally. Deliver Intelligently.
@@ -96,7 +100,7 @@ export function Hero({ persona, onSelectPersona, onOpenInvestorAccess }: HeroPro
             onClick={handlePrimaryCtaClick}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-gradient-to-r from-cyan-400 to-gold px-8 py-3 text-sm font-semibold text-neutral-950 shadow-lg shadow-cyan-500/20 transition hover:opacity-90 sm:text-base"
           >
-            {isInvestor ? INVESTOR_CTA : JOIN_NETWORK_CTA} <ArrowRight size={16} />
+            {content.cta} <ArrowRight size={16} />
           </button>
         </div>
 
