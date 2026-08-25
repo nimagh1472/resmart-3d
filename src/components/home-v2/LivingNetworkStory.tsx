@@ -22,7 +22,7 @@ export function LivingNetworkStory() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/35 to-black/80" />
 
       <div className="relative z-10 flex flex-col items-center gap-4 px-6 text-center">
-        <h2 style={{ fontFamily: 'ui-serif, Georgia, serif' }} className="text-2xl text-white sm:text-4xl">
+        <h2 style={{ fontFamily: 'ui-serif, Georgia, serif', fontSize: 'clamp(2.625rem, 8vw, 6rem)' }} className="text-white leading-tight">
           One city. One living network.
         </h2>
         <p className="glass-pill px-5 py-2 text-xs uppercase tracking-[0.25em] text-cyan-300">

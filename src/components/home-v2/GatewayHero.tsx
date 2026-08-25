@@ -54,8 +54,8 @@ export function GatewayHero({ onSelectPersona }: GatewayHeroProps) {
 
       <div className="relative z-10 flex flex-col items-center gap-10 px-6 text-center">
         <h1
-          style={{ fontFamily: 'ui-serif, Georgia, serif' }}
-          className="text-3xl leading-tight text-white sm:text-5xl"
+          style={{ fontFamily: 'ui-serif, Georgia, serif', fontSize: 'clamp(2.625rem, 8vw, 6rem)' }}
+          className="leading-tight text-white"
         >
           One city.
           <br />

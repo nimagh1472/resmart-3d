@@ -41,7 +41,7 @@ export function SpatialText({
           style={{
             fontFamily: 'ui-serif, Georgia, serif',
             color: '#F8FAFC',
-            fontSize: 'clamp(2rem, 5vw, 3.25rem)',
+            fontSize: 'clamp(2.625rem, 8vw, 6rem)',
             letterSpacing: '0.02em',
             opacity: opacity * 0.95,
             transform: `translateY(${8 * (1 - rise)}px) scale(${0.97 + 0.03 * rise})`,

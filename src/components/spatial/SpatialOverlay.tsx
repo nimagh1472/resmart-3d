@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { SpatialBeat } from '@/lib/spatialManifest';
+import { useReducedFx } from '@/hooks/useReducedFx';
 
 const TEAL = '0, 245, 212';
 
@@ -73,24 +74,27 @@ export function SpatialOverlay({
   isDesktop: boolean;
 }) {
   const aspect = useViewportAspect();
+  const reduceFx = useReducedFx();
 
   return (
     <>
       <div style={vignetteStyle} />
-      <svg width="100%" height="100%" style={overlayStyle} aria-hidden>
-        <filter id="spatial-grain">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
-          <feColorMatrix type="saturate" values="0" />
-        </filter>
-        <rect width="100%" height="100%" filter="url(#spatial-grain)" opacity="0.035" />
-      </svg>
+      {!reduceFx && (
+        <svg width="100%" height="100%" style={overlayStyle} aria-hidden>
+          <filter id="spatial-grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+            <feColorMatrix type="saturate" values="0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#spatial-grain)" opacity="0.035" />
+        </svg>
+      )}
 
-      {beat.overlay === 'pulse' && <PulseLayer beatProgress={beatProgress} aspect={aspect} />}
+      {beat.overlay === 'pulse' && <PulseLayer beatProgress={beatProgress} aspect={aspect} reduceFx={reduceFx} />}
       {beat.overlay === 'intent' && (
         <GlowPoint point={pick(INTENT_POINT, isDesktop)} opacity={0.5 * smoothstep(beatProgress)} />
       )}
       {beat.overlay === 'search' && (
-        <SearchRings point={pick(SEARCH_POINT, isDesktop)} beatProgress={beatProgress} aspect={aspect} />
+        <SearchRings point={pick(SEARCH_POINT, isDesktop)} beatProgress={beatProgress} aspect={aspect} reduceFx={reduceFx} />
       )}
       {beat.overlay === 'match-glow' && (
         <div
@@ -108,7 +112,9 @@ export function SpatialOverlay({
           aspect={aspect}
         />
       )}
-      {beat.overlay === 'chase-route' && <ChaseRoute isDesktop={isDesktop} beatProgress={beatProgress} />}
+      {beat.overlay === 'chase-route' && (
+        <ChaseRoute isDesktop={isDesktop} beatProgress={beatProgress} reduceFx={reduceFx} />
+      )}
       {beat.overlay === 'delivery-pulse' && (
         <TravelingPulse
           from={(isDesktop ? DELIVERY_PATH.desktop : DELIVERY_PATH.mobile)[0]}
@@ -122,10 +128,20 @@ export function SpatialOverlay({
   );
 }
 
-function PulseLayer({ beatProgress, aspect }: { beatProgress: number; aspect: number }) {
+function PulseLayer({
+  beatProgress,
+  aspect,
+  reduceFx,
+}: {
+  beatProgress: number;
+  aspect: number;
+  reduceFx: boolean;
+}) {
   // Three rings, phase-offset — a scroll-position-driven heartbeat rather
   // than an autoplay CSS keyframe loop, so it stays genuinely scroll-driven.
-  const rings = [0, 0.34, 0.67].map((phase) => (beatProgress + phase) % 1);
+  // Skipped under reduceFx: a static glow reads as calmer anyway, and it's
+  // the closest thing in this overlay set to a "particle trail" effect.
+  const rings = reduceFx ? [] : [0, 0.34, 0.67].map((phase) => (beatProgress + phase) % 1);
   return (
     <svg width="100%" height="100%" style={overlayStyle} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
       <ellipse cx="50" cy="50" rx="1.4" ry={1.4 * aspect} fill={`rgba(${TEAL}, ${0.7 * smoothstep(beatProgress)})`} />
@@ -164,13 +180,15 @@ function SearchRings({
   point,
   beatProgress,
   aspect,
+  reduceFx,
 }: {
   point: [number, number];
   beatProgress: number;
   aspect: number;
+  reduceFx: boolean;
 }) {
   const [x, y] = point;
-  const rings = [0, 0.5].map((phase) => (beatProgress + phase) % 1);
+  const rings = reduceFx ? [] : [0, 0.5].map((phase) => (beatProgress + phase) % 1);
   return (
     <svg width="100%" height="100%" style={overlayStyle} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
       <ellipse cx={x} cy={y} rx="0.8" ry={0.8 * aspect} fill={`rgba(${TEAL}, ${0.6 * smoothstep(beatProgress)})`} />
@@ -221,9 +239,19 @@ function TravelingPulse({
   );
 }
 
-function ChaseRoute({ isDesktop, beatProgress }: { isDesktop: boolean; beatProgress: number }) {
+function ChaseRoute({
+  isDesktop,
+  beatProgress,
+  reduceFx,
+}: {
+  isDesktop: boolean;
+  beatProgress: number;
+  reduceFx: boolean;
+}) {
   // Traces the open, visibly-empty road to the car's left (desktop) or
-  // ahead of it (mobile) — not through the vehicle itself.
+  // ahead of it (mobile) — not through the vehicle itself. The dash
+  // offset animates continuously under normal conditions (a moving
+  // "trail"); frozen under reduceFx to a static route line instead.
   const d = isDesktop ? 'M 18 96 Q 26 78 34 52' : 'M 22 96 Q 28 78 34 58';
   return (
     <svg width="100%" height="100%" style={overlayStyle} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
@@ -233,7 +261,7 @@ function ChaseRoute({ isDesktop, beatProgress }: { isDesktop: boolean; beatProgr
         stroke={`rgba(${TEAL}, 0.55)`}
         strokeWidth="0.3"
         strokeDasharray="1.2 1.6"
-        strokeDashoffset={-beatProgress * 12}
+        strokeDashoffset={reduceFx ? 0 : -beatProgress * 12}
       />
     </svg>
   );

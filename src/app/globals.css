@@ -63,6 +63,17 @@ body {
     -webkit-backdrop-filter: blur(12px);
   }
 
+  /* Backdrop-blur is one of the more GPU-costly filters on Safari/iOS —
+     drop it under prefers-reduced-motion so the one-glass-element-per-
+     viewport rule doesn't also become a perf tax for those visitors. */
+  @media (prefers-reduced-motion: reduce) {
+    .glass-pill {
+      background-color: rgba(5, 7, 9, 0.75);
+      backdrop-filter: none;
+      -webkit-backdrop-filter: none;
+    }
+  }
+
   .tier-3-panel {
     border: 1px solid rgba(212, 175, 55, 0.3);
     background-color: #0d1117;

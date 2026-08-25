@@ -63,12 +63,23 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
   const stageOpacity = isDissolving ? 0 : endFadeOpacity;
 
   useEffect(() => {
-    const nextBeat = SPATIAL_BEATS[currentBeat.index]; // 1-based index == next beat's 0-based array position
-    const toAdd = [currentBeat.asset?.id, nextBeat?.asset?.id].filter((id): id is string => Boolean(id));
-    if (toAdd.every((id) => loadedAssetIds.has(id))) return;
-    setLoadedAssetIds((prev) => new Set(Array.from(prev).concat(toAdd)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentBeat.key]);
+    // Keep a rolling window — current, the next beat (preload), and up to 2
+    // beats back — instead of an ever-growing cache. Beyond that, an <img>
+    // is dropped entirely (not just hidden) so Safari/iOS actually releases
+    // the decoded bitmap instead of accumulating ~9 of them for the session.
+    const currentPos = currentBeat.index - 1; // 1-based index -> 0-based array position
+    const windowStart = Math.max(0, currentPos - 2);
+    const windowEnd = Math.min(SPATIAL_BEATS.length - 1, currentPos + 1);
+    const keepIds = new Set<string>();
+    for (let i = windowStart; i <= windowEnd; i++) {
+      const id = SPATIAL_BEATS[i]?.asset?.id;
+      if (id) keepIds.add(id);
+    }
+    setLoadedAssetIds((prev) => {
+      if (prev.size === keepIds.size && Array.from(prev).every((id) => keepIds.has(id))) return prev;
+      return keepIds;
+    });
+  }, [currentBeat.index]);
 
   if (shouldAutoSkip) return null;
 

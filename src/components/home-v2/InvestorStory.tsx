@@ -29,8 +29,8 @@ export function InvestorStory({ onOpenInvestorAccess }: InvestorStoryProps) {
 
       <p className="relative z-10 text-xs font-medium uppercase tracking-[0.3em] text-white/50">Investor</p>
       <h2
-        style={{ fontFamily: 'ui-serif, Georgia, serif' }}
-        className="relative z-10 max-w-2xl text-2xl leading-snug text-white sm:text-4xl"
+        style={{ fontFamily: 'ui-serif, Georgia, serif', fontSize: 'clamp(2.625rem, 7vw, 5rem)' }}
+        className="relative z-10 max-w-3xl leading-snug text-white"
       >
         The AI commerce &amp; logistics infrastructure for Dubai.
       </h2>

@@ -73,7 +73,7 @@ export function OneTransaction() {
         ))}
 
         <div className="relative z-10 flex flex-col items-center gap-8 px-6 text-center">
-          <h2 style={{ fontFamily: 'ui-serif, Georgia, serif' }} className="text-2xl text-white sm:text-4xl">
+          <h2 style={{ fontFamily: 'ui-serif, Georgia, serif', fontSize: 'clamp(2.625rem, 8vw, 6rem)' }} className="text-white leading-tight">
             One transaction. Three roles. One network.
           </h2>
 
