@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import type { LeadRole } from '@/types';
 
-const VIDEO_SRC = '/assets/cyber-dubai-loop.mp4';
+// 128x128 fractal-noise tile, rendered once as a data URI so the grain never
+// depends on a network asset — see .noise-cyan below for how it's applied.
+const NOISE_DATA_URI =
+  "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='128'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")";
 
 interface BackgroundVideoProps {
   persona?: LeadRole;
@@ -12,38 +14,31 @@ interface BackgroundVideoProps {
 }
 
 /**
- * Full-viewport looping background video — replaces the old Three.js ambient
- * skyline canvas. Falls back to a static gradient if the source is missing
- * or fails to load. The vignette overlay's tint shifts to a warm gold cast
- * (the "Private Intelligence Terminal" environment) when either the
- * persona switcher is set to 'investor' OR the visitor has scrolled into
- * Scene 07 — vs. the default teal-tinted obsidian cast otherwise.
+ * Fixed Pure Obsidian background for the conversion section (Join the
+ * Network + forms + footer) — a solid #050709 base with a soft cyan radial
+ * glow and subtle grain. Replaces the old looping perspective-tunnel video,
+ * which read as too busy/repetitive behind the lead capture forms. The glow
+ * shifts to a warm gold cast (the "Private Intelligence Terminal"
+ * environment) when either the persona switcher is set to 'investor' OR the
+ * visitor has scrolled into Scene 07 — vs. the default cyan cast otherwise.
  */
 export function BackgroundVideo({ persona, investorSceneInView }: BackgroundVideoProps) {
-  const [hasError, setHasError] = useState(false);
   const isInvestor = persona === 'investor' || Boolean(investorSceneInView);
 
   return (
     <>
-      {hasError ? (
-        <div className="fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_20%,rgba(0,245,212,0.08),transparent_60%),linear-gradient(to_bottom,#0B0F12,#05070a)]" />
-      ) : (
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="auto"
-          // iOS Safari ignores the camelCase `playsInline` prop on some
-          // versions unless the lowercase webkit attribute is also present.
-          webkit-playsinline="true"
-          disablePictureInPicture
-          className="fixed inset-0 z-0 h-full w-full object-cover pointer-events-none opacity-60"
-          onError={() => setHasError(true)}
-        >
-          <source src={VIDEO_SRC} type="video/mp4" />
-        </video>
-      )}
+      <div className="fixed inset-0 z-0 bg-[#050709]" />
+      <div
+        className="pointer-events-none fixed inset-0 z-0 opacity-[0.04] mix-blend-overlay"
+        style={{ backgroundImage: NOISE_DATA_URI }}
+      />
+      <div
+        className={
+          isInvestor
+            ? 'pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_0%,rgba(212,175,55,0.14),transparent_60%)] transition-opacity duration-700'
+            : 'pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_50%_0%,rgba(0,245,212,0.09),transparent_60%)] transition-opacity duration-700'
+        }
+      />
       <div
         className={
           isInvestor
@@ -51,9 +46,6 @@ export function BackgroundVideo({ persona, investorSceneInView }: BackgroundVide
             : 'pointer-events-none fixed inset-0 z-10 bg-gradient-to-b from-black/60 via-transparent to-[#0A0D0F] transition-colors duration-700'
         }
       />
-      {isInvestor && (
-        <div className="pointer-events-none fixed inset-0 z-10 bg-[radial-gradient(circle_at_50%_0%,rgba(212,175,55,0.12),transparent_55%)] transition-opacity duration-700" />
-      )}
     </>
   );
 }

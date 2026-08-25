@@ -10,6 +10,26 @@ function smoothstep(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
+/**
+ * Dark radial scrim behind centered headline typography — lifts contrast
+ * against busy baked-in imagery (network dashboards, hero logos/taglines)
+ * without a hard-edged box. Opacity is passed in so it fades in/out in
+ * lockstep with the text it sits behind.
+ */
+function TextScrim({ opacity }: { opacity: number }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        background:
+          'radial-gradient(ellipse 65% 40% at 50% 50%, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.28) 45%, transparent 75%)',
+        opacity,
+      }}
+    />
+  );
+}
+
 const PERSONAS: { label: string; role: LeadRole; description: string; icon: typeof ShoppingBag }[] = [
   { label: 'SHOP', role: 'shopper', description: 'AI-matched deals, nearby, in real time.', icon: ShoppingBag },
   { label: 'SELL', role: 'merchant', description: 'Get found by AI buyers. 0% commission.', icon: Store },
@@ -105,8 +125,10 @@ export function SpatialText({
     const opacity = Math.min(rise, fall);
     return (
       <div style={containerStyle}>
+        <TextScrim opacity={opacity} />
         <p
           style={{
+            position: 'relative',
             fontFamily: 'ui-serif, Georgia, serif',
             color: '#F8FAFC',
             fontSize: 'clamp(1.5rem, 4vw, 2.75rem)',
@@ -123,14 +145,45 @@ export function SpatialText({
     );
   }
 
-  if (beat.overlay === 'brand-text') {
-    const rise = smoothstep(beatProgress / 0.3);
-    const fall = beatProgress > 0.85 ? 1 - smoothstep((beatProgress - 0.85) / 0.15) : 1;
+  // Bridges Living Network's dashboard into the brand statement — fades out
+  // just as brand-text fades in (0.7-1.0 here hands off to 0-0.3 there) so
+  // the two headlines never show at once against the shared signature image.
+  if (beat.key === 'signature') {
+    const rise = smoothstep(beatProgress / 0.35);
+    const fall = beatProgress > 0.7 ? 1 - smoothstep((beatProgress - 0.7) / 0.3) : 1;
     const opacity = Math.min(rise, fall);
     return (
       <div style={containerStyle}>
+        <TextScrim opacity={opacity} />
         <p
           style={{
+            position: 'relative',
+            fontFamily: 'ui-serif, Georgia, serif',
+            color: 'rgba(248,250,252,0.85)',
+            fontSize: 'clamp(1.4rem, 4vw, 2.5rem)',
+            letterSpacing: '0.06em',
+            opacity: opacity * 0.9,
+            margin: 0,
+            textAlign: 'center',
+            padding: '0 24px',
+          }}
+        >
+          ALREADY CONNECTED...
+        </p>
+      </div>
+    );
+  }
+
+  if (beat.overlay === 'brand-text') {
+    const rise = smoothstep(beatProgress / 0.35);
+    const fall = beatProgress > 0.82 ? 1 - smoothstep((beatProgress - 0.82) / 0.18) : 1;
+    const opacity = Math.min(rise, fall);
+    return (
+      <div style={containerStyle}>
+        <TextScrim opacity={opacity} />
+        <p
+          style={{
+            position: 'relative',
             fontFamily: 'ui-serif, Georgia, serif',
             color: '#F8FAFC',
             fontSize: 'clamp(2.625rem, 8vw, 6rem)',
@@ -159,7 +212,7 @@ export function SpatialText({
               color: 'rgba(248,250,252,0.7)',
               fontSize: '0.85rem',
               letterSpacing: '0.15em',
-              marginBottom: 28,
+              marginBottom: 'clamp(16px, 4vh, 28px)',
             }}
           >
             THE INTELLIGENCE LAYER FOR DUBAI COMMERCE.
@@ -169,7 +222,8 @@ export function SpatialText({
               display: 'flex',
               flexWrap: 'wrap',
               justifyContent: 'center',
-              gap: 14,
+              rowGap: 'clamp(12px, 3vh, 18px)',
+              columnGap: 12,
               padding: '0 24px',
               maxWidth: 720,
             }}
@@ -183,11 +237,11 @@ export function SpatialText({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 8,
+                  gap: 'clamp(6px, 1.5vh, 8px)',
                   width: 156,
                   border: '1px solid rgba(255,255,255,0.14)',
                   borderRadius: 20,
-                  padding: '22px 16px',
+                  padding: 'clamp(16px, 4vh, 22px) 16px',
                   color: '#F8FAFC',
                   background: 'rgba(13,17,23,0.55)',
                   backdropFilter: 'blur(6px)',
