@@ -148,9 +148,15 @@ export function SpatialText({
   // Bridges Living Network's dashboard into the brand statement — fades out
   // just as brand-text fades in (0.7-1.0 here hands off to 0-0.3 there) so
   // the two headlines never show at once against the shared signature image.
+  // The rise is held at 0 until beatProgress 0.16: SpatialLayer crossfades
+  // the outgoing NETWORK_SLOT dashboard image on a real-time 1.6s CSS
+  // transition (SpatialLayer.tsx), decoupled from scroll progress — this
+  // delay gives that fade a moment to clear before new text starts rising,
+  // so the baked "LIVING AI NETWORK" dashboard and this headline never
+  // overlap.
   if (beat.key === 'signature') {
-    const rise = smoothstep(beatProgress / 0.35);
-    const fall = beatProgress > 0.7 ? 1 - smoothstep((beatProgress - 0.7) / 0.3) : 1;
+    const rise = beatProgress < 0.16 ? 0 : smoothstep((beatProgress - 0.16) / 0.3);
+    const fall = beatProgress > 0.72 ? 1 - smoothstep((beatProgress - 0.72) / 0.28) : 1;
     const opacity = Math.min(rise, fall);
     return (
       <div style={containerStyle}>
@@ -168,7 +174,9 @@ export function SpatialText({
             padding: '0 24px',
           }}
         >
-          ALREADY CONNECTED...
+          ALREADY CONNECTED.
+          <br />
+          NOW MAKE IT INTELLIGENT.
         </p>
       </div>
     );
