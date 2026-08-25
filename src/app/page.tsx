@@ -2,25 +2,15 @@
 
 import { useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
+import { Building2, Gauge } from 'lucide-react';
 import { BackgroundVideo } from '@/components/ui/BackgroundVideo';
 import { StickyHeader } from '@/components/ui/StickyHeader';
-import { GatewayHero } from '@/components/home-v2/GatewayHero';
-import { RoleSelector } from '@/components/home-v2/RoleSelector';
-import { ShopperStory } from '@/components/home-v2/ShopperStory';
-import { MerchantStory } from '@/components/home-v2/MerchantStory';
-import { DriverStory } from '@/components/home-v2/DriverStory';
-import { OneTransaction } from '@/components/home-v2/OneTransaction';
-import { LivingNetworkStory } from '@/components/home-v2/LivingNetworkStory';
-import { Proof } from '@/components/home-v2/Proof';
-import { InvestorStory } from '@/components/home-v2/InvestorStory';
-import { SceneCommerce } from '@/components/ui/scenes/SceneCommerce';
-import { SceneLogistics } from '@/components/ui/scenes/SceneLogistics';
-import { SceneNetwork } from '@/components/ui/scenes/SceneNetwork';
+import { LeadCaptureCard } from '@/components/ui/LeadCaptureCard';
 import { InvestorAccessModal } from '@/components/ui/InvestorAccessModal';
 import { Footer } from '@/components/ui/Footer';
-import { DEFAULT_DISTRICT_ID } from '@/lib/pitchData';
+import { DISTRICTS, DEFAULT_DISTRICT_ID, MERCHANT_NETWORK_TARGET } from '@/lib/pitchData';
 import { useIntentPersona } from '@/hooks/useIntentPersona';
-import type { DistrictId, LeadRole } from '@/types';
+import type { LeadRole } from '@/types';
 
 // Client-only + code-split: the intro's assets/logic never enter the
 // initial bundle, and (via ssr:false) never render on the server — first
@@ -31,32 +21,21 @@ const SpatialStage = dynamic(
   { ssr: false }
 );
 
-/** Same anchor-scroll convention as RegistrationHubs.tsx / the old Hero.tsx. */
-function scrollToLeadCapture(role: Exclude<LeadRole, 'investor'>) {
-  const anchorId = role === 'driver' ? 'lead-capture-driver' : 'lead-capture';
-  document.getElementById(anchorId)?.scrollIntoView({ behavior: 'smooth' });
-}
+const LAUNCH_DISTRICT_GMV_AED = (DISTRICTS.find((d) => d.id === DEFAULT_DISTRICT_ID) ?? DISTRICTS[0]).regionalGmvAed;
 
 /**
- * Homepage V2: Spatial V2's scroll-driven intro (src/components/spatial)
- * hands off seamlessly into the Homepage V2 narrative (Gateway -> Role
- * Selector -> Shopper/Merchant/Driver stories -> One Transaction -> Living
- * Network -> Proof -> Investor, all in src/components/home-v2), which in
- * turn feeds the still-functional lead-capture/district/investor pieces
- * of the original build: SceneCommerce/SceneLogistics (the real
- * LeadCaptureCard forms), SceneNetwork (the real DistrictSelector), and
- * InvestorAccessModal. The old Hero/SceneProblem/SceneAiLayer/SceneInvestor
- * narrative scenes are retired (superseded visually by Homepage V2) but
- * every underlying flow they exposed — persona selection, lead capture,
- * investor access, the countdown (still in StickyHeader), referral/query
- * routing (useIntentPersona) — is preserved.
+ * Homepage — Spatial V2's single continuous 12-act scroll stage
+ * (src/components/spatial) *is* the homepage. It ends on its own persona
+ * gateway (Act 12: Shop / Sell / Drive / Invest material cards), which
+ * hands off directly into this one conversion section below: the launch
+ * metrics, the real LeadCaptureCard funnel (Shopper/Merchant/Driver forms),
+ * and InvestorAccessModal for Invest. No intermediate narrative sections —
+ * the intro is the pitch, this is just where it converts.
  */
 export default function Home() {
   const initialPersona = useIntentPersona();
   const [persona, setPersona] = useState<LeadRole>(initialPersona);
-  const [selectedDistrict, setSelectedDistrict] = useState<DistrictId>(DEFAULT_DISTRICT_ID);
   const [isInvestorAccessOpen, setIsInvestorAccessOpen] = useState(false);
-  const [isInvestorSceneInView] = useState(false);
   const openInvestorAccess = () => setIsInvestorAccessOpen(true);
   const homeContentRef = useRef<HTMLDivElement>(null);
 
@@ -70,39 +49,44 @@ export default function Home() {
     if (role === 'investor') setIsInvestorAccessOpen(true);
   };
 
-  // Homepage V2's Gateway/Role Selector sections reuse this same real
-  // flow — set persona, then either open the investor modal or scroll to
-  // the matching LeadCaptureCard anchor.
-  const handleSelectPersona = (role: LeadRole) => {
-    setPersona(role);
-    if (role === 'investor') openInvestorAccess();
-    else scrollToLeadCapture(role);
-  };
-
   return (
     <>
       <SpatialStage onSkip={scrollPastIntro} onSelectPersona={handlePersonaFromIntro} />
 
       <div ref={homeContentRef}>
-        <BackgroundVideo persona={persona} investorSceneInView={isInvestorSceneInView} />
+        <BackgroundVideo persona={persona} />
 
         <main className="relative z-20 min-h-screen w-full overflow-x-hidden">
           <div className="flex flex-col items-center">
             <StickyHeader onOpenInvestorAccess={openInvestorAccess} />
 
-            <GatewayHero onSelectPersona={handleSelectPersona} />
-            <RoleSelector onSelectPersona={handleSelectPersona} />
-            <ShopperStory />
-            <MerchantStory />
-            <DriverStory />
-            <OneTransaction />
-            <LivingNetworkStory />
-            <Proof />
-            <InvestorStory onOpenInvestorAccess={openInvestorAccess} />
+            <section className="flex w-full flex-col items-center px-4 pt-16 sm:pt-24">
+              <h2 className="text-center text-2xl font-semibold text-white sm:text-3xl">Join the Network</h2>
+              <p className="mt-2 max-w-md text-center text-sm text-neutral-400">
+                One intelligent commerce &amp; logistics layer for Dubai — pick your role below.
+              </p>
 
-            <SceneCommerce persona={persona} onSelectPersona={setPersona} selectedDistrict={selectedDistrict} />
-            <SceneLogistics persona={persona} onSelectPersona={setPersona} selectedDistrict={selectedDistrict} />
-            <SceneNetwork selectedDistrict={selectedDistrict} onSelectDistrict={setSelectedDistrict} />
+              <div className="glass-panel mx-auto mt-6 flex w-fit flex-wrap items-center justify-center gap-6 rounded-2xl p-5 sm:p-6">
+                <div className="flex items-center gap-2">
+                  <Gauge size={20} className="text-cyan-300" />
+                  <div>
+                    <div className="font-mono text-xl font-semibold text-white">
+                      AED {(LAUNCH_DISTRICT_GMV_AED / 1_000_000).toLocaleString()}M
+                    </div>
+                    <div className="text-[10px] uppercase tracking-wide text-neutral-500">Downtown Dubai GMV Model</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Building2 size={20} className="text-cyan-300" />
+                  <div>
+                    <div className="font-mono text-xl font-semibold text-white">{MERCHANT_NETWORK_TARGET}</div>
+                    <div className="text-[10px] uppercase tracking-wide text-neutral-500">Merchant Network Target</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <LeadCaptureCard persona={persona} onSelectPersona={setPersona} selectedDistrict={DEFAULT_DISTRICT_ID} />
 
             <Footer />
           </div>

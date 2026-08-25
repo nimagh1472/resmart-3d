@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { Briefcase, ShoppingBag, Store, Truck } from 'lucide-react';
 import type { SpatialBeat } from '@/lib/spatialManifest';
 import type { LeadRole } from '@/types';
 
@@ -9,11 +10,11 @@ function smoothstep(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
-const PERSONAS: { label: string; role: LeadRole }[] = [
-  { label: 'SHOP', role: 'shopper' },
-  { label: 'SELL', role: 'merchant' },
-  { label: 'DRIVE', role: 'driver' },
-  { label: 'INVEST', role: 'investor' },
+const PERSONAS: { label: string; role: LeadRole; description: string; icon: typeof ShoppingBag }[] = [
+  { label: 'SHOP', role: 'shopper', description: 'AI-matched deals, nearby, in real time.', icon: ShoppingBag },
+  { label: 'SELL', role: 'merchant', description: 'Get found by AI buyers. 0% commission.', icon: Store },
+  { label: 'DRIVE', role: 'driver', description: 'AI-dispatched routes. Zero commission.', icon: Truck },
+  { label: 'INVEST', role: 'investor', description: 'Confidential data room & seed model.', icon: Briefcase },
 ];
 
 /**
@@ -168,31 +169,63 @@ export function SpatialText({
               display: 'flex',
               flexWrap: 'wrap',
               justifyContent: 'center',
-              gap: 16,
+              gap: 14,
               padding: '0 24px',
+              maxWidth: 720,
             }}
           >
-            {PERSONAS.map(({ label, role }, i) => (
+            {PERSONAS.map(({ label, role, description, icon: Icon }, i) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => onSelectPersona?.(role)}
                 style={{
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  borderRadius: 999,
-                  padding: '14px 30px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: 156,
+                  border: '1px solid rgba(255,255,255,0.14)',
+                  borderRadius: 20,
+                  padding: '22px 16px',
                   color: '#F8FAFC',
-                  fontFamily: 'ui-serif, Georgia, serif',
-                  fontSize: '1rem',
-                  letterSpacing: '0.08em',
-                  background: 'rgba(5,7,9,0.35)',
-                  backdropFilter: 'blur(4px)',
+                  background: 'rgba(13,17,23,0.55)',
+                  backdropFilter: 'blur(6px)',
+                  boxShadow: '0 20px 40px -16px rgba(0,0,0,0.55)',
                   opacity: smoothstep((beatProgress - i * 0.06) / 0.3),
+                  transform: `translateY(${8 * (1 - smoothstep((beatProgress - i * 0.06) / 0.3))}px)`,
                   cursor: 'pointer',
                   pointerEvents: 'auto',
+                  transition: 'border-color 0.2s ease, background 0.2s ease',
+                }}
+                onMouseEnter={(event) => {
+                  event.currentTarget.style.borderColor = 'rgba(0,245,212,0.5)';
+                  event.currentTarget.style.background = 'rgba(0,245,212,0.08)';
+                }}
+                onMouseLeave={(event) => {
+                  event.currentTarget.style.borderColor = 'rgba(255,255,255,0.14)';
+                  event.currentTarget.style.background = 'rgba(13,17,23,0.55)';
                 }}
               >
-                {label}
+                <Icon size={22} color="#00F5D4" />
+                <span
+                  style={{
+                    fontFamily: 'ui-serif, Georgia, serif',
+                    fontSize: '1rem',
+                    letterSpacing: '0.08em',
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  style={{
+                    fontSize: '0.7rem',
+                    lineHeight: 1.4,
+                    color: 'rgba(248,250,252,0.6)',
+                  }}
+                >
+                  {description}
+                </span>
               </button>
             ))}
           </div>
