@@ -18,6 +18,16 @@ import type { LeadRole } from '@/types';
 
 const UNIQUE_SLOTS = getUniqueAssetSlots();
 
+// How long a persona choice / Skip click takes to dissolve out before the
+// (concurrent, smooth) scroll lands on the homepage — long enough to read
+// as a deliberate cross-dissolve, short enough not to feel like a wait.
+const DISSOLVE_MS = 700;
+
+function smoothstep(t: number): number {
+  const x = Math.min(1, Math.max(0, t));
+  return x * x * (3 - 2 * x);
+}
+
 interface SpatialStageProps {
   /** Skip clicked or a persona tile chosen — caller scrolls past the intro into the real homepage. */
   onSkip?: () => void;
@@ -39,10 +49,18 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
   const progress = useSpatialProgress(wrapperRef);
   const isDesktop = useIsDesktopViewport();
   const [loadedAssetIds, setLoadedAssetIds] = useState<Set<string>>(() => new Set());
+  const [isDissolving, setIsDissolving] = useState(false);
   const { shouldAutoSkip, isSkipControlVisible, skip } = useCinematicSkip();
 
   const currentBeat = getBeatAtProgress(progress);
   const beatProgress = getBeatProgress(currentBeat, progress);
+
+  // Signature Dubai onward reads as the gateway into the homepage: the
+  // stage itself fades out over the sequence's final stretch, so scrolling
+  // straight past it (no persona chosen) dissolves into Hero rather than
+  // the sticky stage just abruptly un-sticking.
+  const endFadeOpacity = 1 - smoothstep((progress - 0.95) / 0.05);
+  const stageOpacity = isDissolving ? 0 : endFadeOpacity;
 
   useEffect(() => {
     const nextBeat = SPATIAL_BEATS[currentBeat.index]; // 1-based index == next beat's 0-based array position
@@ -54,12 +72,19 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
 
   if (shouldAutoSkip) return null;
 
+  // Both paths dissolve the stage out while concurrently starting the
+  // smooth scroll into the homepage — a coordinated fade+scroll instead
+  // of an instant cut.
   const handleSkip = () => {
+    if (isDissolving) return;
     skip();
+    setIsDissolving(true);
     onSkip?.();
   };
 
   const handleSelectPersona = (role: LeadRole) => {
+    if (isDissolving) return;
+    setIsDissolving(true);
     onSelectPersona?.(role);
     onSkip?.();
   };
@@ -69,7 +94,18 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
     // (z-20) — this is normal in-flow content, not a fixed overlay, so the
     // z-index only matters while it's actually scrolled into view.
     <div ref={wrapperRef} style={{ position: 'relative', zIndex: 30, height: `${SPATIAL_TOTAL_HEIGHT_VH}vh` }}>
-      <div style={{ position: 'sticky', top: 0, height: '100vh', overflow: 'hidden', background: '#050709' }}>
+      <div
+        style={{
+          position: 'sticky',
+          top: 0,
+          height: '100vh',
+          overflow: 'hidden',
+          background: '#050709',
+          opacity: stageOpacity,
+          pointerEvents: isDissolving ? 'none' : 'auto',
+          transition: isDissolving ? `opacity ${DISSOLVE_MS}ms ease` : 'none',
+        }}
+      >
         {UNIQUE_SLOTS.map((slot) => (
           <SpatialLayer
             key={slot.id}
@@ -98,8 +134,8 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
             fontSize: 12,
             padding: '8px 16px',
             cursor: 'pointer',
-            opacity: isSkipControlVisible ? 1 : 0,
-            pointerEvents: isSkipControlVisible ? 'auto' : 'none',
+            opacity: isSkipControlVisible && !isDissolving ? 1 : 0,
+            pointerEvents: isSkipControlVisible && !isDissolving ? 'auto' : 'none',
             transition: 'opacity 0.8s ease',
           }}
         >

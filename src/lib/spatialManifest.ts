@@ -196,7 +196,7 @@ type RawBeat = Omit<SpatialBeat, 'start' | 'end'>;
 
 const RAW_BEATS: RawBeat[] = [
   { index: 1, key: 'pulse', name: 'Black / Pulse', heightVh: 70, asset: null, overlay: 'pulse' },
-  { index: 2, key: 'dubai', name: 'Dubai', heightVh: 130, asset: DUBAI_SLOT, overlay: null },
+  { index: 2, key: 'dubai', name: 'Dubai', heightVh: 150, asset: DUBAI_SLOT, overlay: null },
   { index: 3, key: 'shopper-intent', name: 'Shopper Intent', heightVh: 100, asset: SHOPPER_SLOT, overlay: 'intent' },
   { index: 4, key: 'search', name: 'Search', heightVh: 80, asset: SHOPPER_SLOT, overlay: 'search' },
   { index: 5, key: 'merchant-match', name: 'Merchant Match', heightVh: 100, asset: MERCHANT_SLOT, overlay: 'match-glow' },
@@ -204,8 +204,8 @@ const RAW_BEATS: RawBeat[] = [
   { index: 7, key: 'chase', name: 'Chase', heightVh: 100, asset: CHASE_SLOT, overlay: 'chase-route' },
   { index: 8, key: 'delivery', name: 'Delivery', heightVh: 100, asset: DELIVERY_SLOT, overlay: 'delivery-pulse' },
   { index: 9, key: 'pullback', name: 'Pullback', heightVh: 90, asset: PULLBACK_SLOT, overlay: null },
-  { index: 10, key: 'living-network', name: 'Living Network', heightVh: 130, asset: NETWORK_SLOT, overlay: 'network-live' },
-  { index: 11, key: 'signature', name: 'Signature Dubai', heightVh: 100, asset: SIGNATURE_SLOT, overlay: null },
+  { index: 10, key: 'living-network', name: 'Living Network', heightVh: 150, asset: NETWORK_SLOT, overlay: 'network-live' },
+  { index: 11, key: 'signature', name: 'Signature Dubai', heightVh: 130, asset: SIGNATURE_SLOT, overlay: null },
   { index: 12, key: 'brand', name: 'THIS IS RESMART', heightVh: 90, asset: SIGNATURE_SLOT, overlay: 'brand-text' },
   { index: 13, key: 'personas', name: 'Shop / Sell / Drive / Invest', heightVh: 100, asset: SIGNATURE_SLOT, overlay: 'persona-grid' },
 ];

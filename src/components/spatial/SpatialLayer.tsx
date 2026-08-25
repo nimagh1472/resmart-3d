@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { getAssetWindow, type SpatialAssetSlot } from '@/lib/spatialManifest';
 import { SPATIAL_ASSETS } from '@/lib/spatialAssets';
+import { useParallaxPointer } from '@/hooks/useParallaxPointer';
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -15,8 +16,14 @@ function lerp(from: number, to: number, t: number): number {
 // Fraction-of-sequence equivalent of cinematicManifest's KEN_BURNS_BLEED_SECONDS
 // — the motion for a beat starts warming up slightly before it's scrolled
 // into (and keeps drifting slightly after) so nothing sits frozen at the
-// exact instant it crosses into/out of view.
-const KEN_BURNS_BLEED = 0.01;
+// exact instant it crosses into/out of view — widened so the overlap
+// during a crossfade is long enough to actually be felt, not just a
+// technicality.
+const KEN_BURNS_BLEED = 0.02;
+
+// Restrained pointer parallax strength (px) — a depth cue layered on top
+// of the scroll-driven Ken Burns motion, not a replacement for it.
+const PARALLAX_STRENGTH = 8;
 
 interface SpatialLayerProps {
   slot: SpatialAssetSlot;
@@ -30,8 +37,31 @@ interface SpatialLayerProps {
 
 export function SpatialLayer({ slot, opacity, progress, isDesktop, shouldLoad }: SpatialLayerProps) {
   const kenBurnsRef = useRef<HTMLDivElement>(null);
+  const parallaxRef = useRef<HTMLDivElement>(null);
+  const pointer = useParallaxPointer();
   const framing = isDesktop ? slot.desktop : slot.mobile;
   const url = SPATIAL_ASSETS[slot.id]?.[isDesktop ? 'desktop' : 'mobile'];
+
+  // Ken Burns overscan buffer — 0 for slots that don't zoom/pan (e.g.
+  // Network, whose dense edge-to-edge dashboard can't afford the crop),
+  // the usual 4% otherwise. Also scales parallax down for those same
+  // slots so it never pushes the image far enough to expose an edge gap.
+  const overscan = slot.overscanPercent ?? 4;
+  const parallaxStrength = PARALLAX_STRENGTH * Math.min(1, overscan / 4);
+
+  useEffect(() => {
+    let frame: number;
+    const apply = () => {
+      if (parallaxRef.current) {
+        const x = pointer.current.x * parallaxStrength;
+        const y = pointer.current.y * parallaxStrength * 0.6;
+        parallaxRef.current.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+      }
+      frame = requestAnimationFrame(apply);
+    };
+    frame = requestAnimationFrame(apply);
+    return () => cancelAnimationFrame(frame);
+  }, [pointer, parallaxStrength]);
 
   const rawWindow = getAssetWindow(slot.id);
   const windowStart = rawWindow.start - KEN_BURNS_BLEED;
@@ -51,23 +81,18 @@ export function SpatialLayer({ slot, opacity, progress, isDesktop, shouldLoad }:
     }
   }, [scale, panX, panY]);
 
-  // Overscan margin needed as Ken Burns buffer — 0 for slots that don't
-  // zoom/pan (e.g. Network, whose dense edge-to-edge dashboard can't
-  // afford the crop), the usual 4% otherwise.
-  const overscan = slot.overscanPercent ?? 4;
-
   return (
     <div
       style={{
         position: 'absolute',
         inset: 0,
         opacity,
-        transition: 'opacity 1.2s cubic-bezier(0.22, 0, 0.18, 1)',
+        transition: 'opacity 1.6s cubic-bezier(0.22, 0, 0.18, 1)',
         pointerEvents: 'none',
         overflow: 'hidden',
       }}
     >
-      <div style={{ position: 'absolute', inset: `-${overscan}%` }}>
+      <div ref={parallaxRef} style={{ position: 'absolute', inset: `-${overscan}%` }}>
         <div ref={kenBurnsRef} style={{ position: 'absolute', inset: 0, transformOrigin: '50% 50%' }}>
           {shouldLoad && url && (
             // eslint-disable-next-line @next/next/no-img-element
