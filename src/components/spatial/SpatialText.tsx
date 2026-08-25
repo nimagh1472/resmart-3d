@@ -31,6 +31,97 @@ export function SpatialText({
   beatProgress: number;
   onSelectPersona?: (role: LeadRole) => void;
 }) {
+  // A held breath under the reveal — quiet, small, not a headline moment.
+  if (beat.key === 'dubai') {
+    const opacity = smoothstep((beatProgress - 0.35) / 0.3) * (1 - smoothstep((beatProgress - 0.85) / 0.15));
+    return (
+      <div style={containerStyle}>
+        <p
+          style={{
+            fontFamily: 'ui-serif, Georgia, serif',
+            fontStyle: 'italic',
+            color: 'rgba(248,250,252,0.75)',
+            fontSize: 'clamp(1.1rem, 2.5vw, 1.5rem)',
+            opacity,
+            margin: 0,
+            textAlign: 'center',
+            padding: '0 24px',
+          }}
+        >
+          Someone wants something.
+        </p>
+      </div>
+    );
+  }
+
+  // A restrained HUD-style match readout, not a dashboard card — sits near
+  // the storefront glow this beat's overlay already highlights.
+  if (beat.key === 'merchant-match') {
+    const opacity = smoothstep(beatProgress / 0.4);
+    return (
+      <div
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '30%',
+          transform: 'translate(-50%, 0)',
+          textAlign: 'center',
+          opacity,
+          pointerEvents: 'none',
+        }}
+      >
+        <p
+          style={{
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: '#00F5D4',
+            fontSize: '0.9rem',
+            letterSpacing: '0.15em',
+            margin: 0,
+          }}
+        >
+          FOUND.
+        </p>
+        <p
+          style={{
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            color: 'rgba(248,250,252,0.75)',
+            fontSize: '0.7rem',
+            letterSpacing: '0.1em',
+            margin: '4px 0 0',
+          }}
+        >
+          MATCH 01 · 1.2 KM · IN STOCK
+        </p>
+      </div>
+    );
+  }
+
+  // The scale statement bridging one transaction into the city-wide network
+  // — placed on Pullback only, before Living Network's own dense dashboard.
+  if (beat.key === 'pullback') {
+    const rise = smoothstep(beatProgress / 0.3);
+    const fall = beatProgress > 0.8 ? 1 - smoothstep((beatProgress - 0.8) / 0.2) : 1;
+    const opacity = Math.min(rise, fall);
+    return (
+      <div style={containerStyle}>
+        <p
+          style={{
+            fontFamily: 'ui-serif, Georgia, serif',
+            color: '#F8FAFC',
+            fontSize: 'clamp(1.5rem, 4vw, 2.75rem)',
+            letterSpacing: '0.01em',
+            opacity: opacity * 0.95,
+            margin: 0,
+            textAlign: 'center',
+            padding: '0 24px',
+          }}
+        >
+          One request. One of thousands.
+        </p>
+      </div>
+    );
+  }
+
   if (beat.overlay === 'brand-text') {
     const rise = smoothstep(beatProgress / 0.3);
     const fall = beatProgress > 0.85 ? 1 - smoothstep((beatProgress - 0.85) / 0.15) : 1;
