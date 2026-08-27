@@ -14,6 +14,7 @@ import { useCinematicSkip } from '@/hooks/useCinematicSkip';
 import { SpatialLayer } from '@/components/spatial/SpatialLayer';
 import { SpatialOverlay } from '@/components/spatial/SpatialOverlay';
 import { SpatialText } from '@/components/spatial/SpatialText';
+import { SpatialScrollGuide } from '@/components/spatial/SpatialScrollGuide';
 import type { LeadRole } from '@/types';
 
 const UNIQUE_SLOTS = getUniqueAssetSlots();
@@ -130,6 +131,7 @@ export function SpatialStage({ onSkip, onSelectPersona }: SpatialStageProps) {
 
         <SpatialOverlay beat={currentBeat} beatProgress={beatProgress} isDesktop={isDesktop} />
         <SpatialText beat={currentBeat} beatProgress={beatProgress} onSelectPersona={handleSelectPersona} />
+        <SpatialScrollGuide progress={progress} />
 
         <button
           onClick={handleSkip}
