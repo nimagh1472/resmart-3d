@@ -225,6 +225,7 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
                 placeholder="Work Email or LinkedIn URL"
                 className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
               />
+              <p className="text-[10px] text-neutral-500">We respect your privacy. Unsubscribe at any time.</p>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
                 type="submit"
@@ -341,12 +342,18 @@ export function InvestorAccessModal({ isOpen, onClose }: InvestorAccessModalProp
 
         <div className="mt-5 flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-3 text-[11px] leading-relaxed text-neutral-500">
           <ShieldCheck size={14} className="mt-0.5 shrink-0 text-neutral-400" />
-          <p>
-            This is not an offer of securities. Submitting this form reflects interest only and grants Priority Seed
-            Access — priority access to participate in a future funding round, subject to definitive documentation,
-            due diligence, and applicable UAE regulatory frameworks. No investment decision should be made without
-            independent legal and financial advice.
-          </p>
+          <div>
+            <p>
+              This is not an offer of securities. Submitting this form reflects interest only and grants Priority Seed
+              Access — priority access to participate in a future funding round, subject to definitive documentation,
+              due diligence, and applicable UAE regulatory frameworks. No investment decision should be made without
+              independent legal and financial advice.
+            </p>
+            <p className="mt-2">
+              This site is a pre-launch presentation and waitlist demo for ReSmart AI. No commercial transactions are
+              currently processed on this platform. All figures shown are illustrative market projections.
+            </p>
+          </div>
         </div>
       </div>
     </div>

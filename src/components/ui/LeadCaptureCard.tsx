@@ -220,6 +220,7 @@ export function LeadCaptureCard({
                   placeholder="jane@example.com"
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
                 />
+                <p className="mt-1 text-[10px] text-neutral-500">We respect your privacy. Unsubscribe at any time.</p>
               </div>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
@@ -274,6 +275,7 @@ export function LeadCaptureCard({
                   placeholder="owner@yourstore.ae or +971 5X XXX XXXX"
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
                 />
+                <p className="mt-1 text-[10px] text-neutral-500">We respect your privacy. Unsubscribe at any time.</p>
               </div>
               {error && <p className="text-xs text-red-400">{error}</p>}
               <button
@@ -301,6 +303,7 @@ export function LeadCaptureCard({
                   placeholder="you@example.com"
                   className="w-full rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
                 />
+                <p className="mt-1 text-[10px] text-neutral-500">We respect your privacy. Unsubscribe at any time.</p>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-neutral-300">Vehicle Type</label>
